@@ -1,0 +1,2203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Team Directory</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;background:#f0efe9;color:#1a1a18;height:100vh;display:flex;overflow:hidden}
+.sidebar{width:220px;flex-shrink:0;background:#fff;color:#1a1a18;display:flex;flex-direction:column;height:100vh;border-right:1px solid #e5e4de}
+.sidebar-header{padding:1rem;border-bottom:1px solid #e5e4de}
+.sidebar-title{font-size:11px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:#aaa;margin-bottom:10px}
+.org-list{flex:1;overflow-y:auto;padding:8px 0}
+.org-item{display:flex;align-items:center;gap:8px;padding:8px 1rem;cursor:pointer;font-size:13px;color:#888}
+.org-item:hover{background:#f5f4f0;color:#1a1a18}
+.org-item.active{background:#e8f0fe;color:#1a56c4;font-weight:500}
+.org-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.add-org-btn{margin:8px;padding:7px 10px;border-radius:8px;background:#1a56c4;border:none;color:#fff;font-size:12px;font-weight:500;cursor:pointer;text-align:center;width:calc(100% - 16px)}
+.add-org-btn:hover{background:#1446a8}
+.add-org-btn:hover{background:#333;color:#e0dfd8}
+.sidebar-footer{border-top:1px solid #e5e4de;display:flex;flex-direction:column}
+.sf-block{padding:10px 12px;display:flex;flex-direction:column;gap:5px}
+.sf-block+.sf-block{border-top:1px solid #f0efe9}
+.sf-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#bbb;margin-bottom:1px}
+.sidebar-save-status{font-size:11px;color:#aaa;line-height:1.4}
+.sidebar-save-status.saving{color:#f59e0b}
+.sidebar-save-status.saved{color:#16a34a}
+.sidebar-actions-row{display:flex;gap:6px}
+.sidebar-action{flex:1;font-size:11px;padding:5px 0;border-radius:6px;background:#f5f4f0;border:1px solid #e0dfd8;color:#555;cursor:pointer;text-align:center;font-weight:500}
+.sidebar-action:hover{background:#e8e7e0;color:#1a1a18}
+.sf-note{font-size:10px;color:#bbb;line-height:1.4}
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.topbar{background:#fff;border-bottom:1px solid #e0dfd8;padding:0 1.5rem;height:52px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.org-name{font-size:16px;font-weight:500}
+.topbar-actions{display:flex;gap:6px}
+.tbtn{font-size:12px;padding:5px 12px;border-radius:8px;background:#f0efe9;border:1px solid #d0cfd8;color:#555;cursor:pointer}
+.tbtn:hover{background:#e8e7e0}
+.tbtn.primary{background:#1a56c4;border-color:#1a56c4;color:#fff}
+.tbtn.primary:hover{background:#1446a8}
+.tabs{display:flex;gap:4px;padding:0 1.5rem;background:#fff;border-bottom:1px solid #e0dfd8;flex-shrink:0}
+.tab{font-size:13px;padding:10px 14px;border:none;background:transparent;color:#888;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px}
+.tab.active{color:#1a56c4;border-bottom-color:#1a56c4;font-weight:500}
+.content{flex:1;overflow-y:auto;padding:1.5rem;display:flex;flex-direction:column}
+.content>.empty-state{flex:1}
+/* CARDS */
+.search-wrap{position:relative;margin-bottom:10px}
+.search-wrap input{width:100%;padding:8px 12px 8px 34px;border:1px solid #d0cfd8;border-radius:8px;background:#fff;font-size:14px;outline:none}
+.search-wrap input:focus{border-color:#aac4f5}
+.si{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:#aaa;font-size:13px}
+.filter-bar{display:flex;gap:6px;margin-bottom:1rem;flex-wrap:wrap;align-items:center}
+.fl{font-size:11px;color:#aaa}
+.chip{font-size:12px;padding:3px 10px;border-radius:20px;border:1px solid #d0cfd8;background:#fff;color:#666;cursor:pointer}
+.chip.active{background:#e8f0fe;border-color:#aac4f5;color:#1a56c4}
+.card{background:#fff;border:1px solid #e0dfd8;border-radius:10px;padding:.9rem 1.1rem;margin-bottom:8px}
+.card-top{display:flex;align-items:flex-start;gap:10px}
+.av{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:500;font-size:12px;flex-shrink:0}
+.card-main{flex:1;min-width:0}
+.cname{font-size:14px;font-weight:500;margin-bottom:2px}
+.crole{font-size:12px;color:#666;margin-bottom:4px}
+.cmeta{display:flex;flex-wrap:wrap;gap:4px;margin-top:3px}
+.away-line{font-size:11px;color:#b45309;margin-top:3px}
+.tag{font-size:11px;padding:2px 7px;border-radius:20px;background:#f5f4f0;border:1px solid #e0dfd8;color:#666}
+.tag-client{background:#fef3e2;border-color:#f5c842;color:#7a5200}
+.pill{font-size:10px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;padding:1px 5px;border-radius:3px;margin-left:3px}
+.pill-int{background:#e8f0fe;color:#1a56c4}
+.pill-client-side{background:#e6f4ea;color:#1e6e3a}
+.pill-other{background:#f5f4f0;color:#888}
+.pill-tag{background:#ede8fe;color:#4a2db5}
+.cnotes{font-size:12px;color:#666;margin-top:7px;padding-top:7px;border-top:1px solid #f0efe8;line-height:1.5}
+.card-actions{display:flex;gap:8px;margin-top:7px;padding-top:7px;border-top:1px solid #f0efe8}
+.cbtn{font-size:12px;color:#aaa;background:none;border:none;cursor:pointer;padding:1px 0}
+.cbtn:hover{color:#333}
+.cbtn.del:hover{color:#c0392b}
+.empty{text-align:center;padding:3rem 1rem;color:#aaa}
+/* TREE */
+.tree-controls{display:flex;align-items:center;gap:6px;margin-bottom:10px}
+.campaign-banner{background:#fff;border:1.5px solid #e5e4de;border-radius:12px;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:1.2rem;flex-wrap:wrap}
+.campaign-banner-active{border-color:#1a56c4;background:#f4f7fe}
+.cbanner-left{flex:1;min-width:0}
+.cbanner-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#aaa;margin-bottom:3px}
+.campaign-banner-active .cbanner-label{color:#1a56c4}
+.cbanner-desc{font-size:13px;color:#666;line-height:1.4}
+.cbanner-count{font-weight:600;color:#1a56c4}
+.cbanner-right{display:flex;align-items:center;gap:6px;flex-wrap:wrap;flex-shrink:0}
+.cbanner-select{font-size:13px;padding:5px 10px;border-radius:8px;border:1px solid #d0cfd8;background:#fff;cursor:pointer;max-width:220px;outline:none}
+.cbanner-select:focus{border-color:#1a56c4;box-shadow:0 0 0 2px #e8f0fe}
+.cbanner-btn{font-size:12px;padding:5px 12px;border-radius:8px;border:1px solid #d0cfd8;background:#f0efe9;color:#444;cursor:pointer;white-space:nowrap}
+.cbanner-btn:hover{background:#e5e4de}
+.cbanner-btn-clear{background:#fff;color:#1a56c4;border-color:#c0d4f5}
+.cbanner-btn-del{color:#c0392b;border-color:#e0a0a0;background:#fff}
+.cbanner-btn-del:hover{background:#fce8e4}
+.sector-block{margin-bottom:1.5rem}
+.sector-head{font-size:11px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;padding-bottom:7px;border-bottom:1px solid #e0dfd8;margin-bottom:9px;color:#888}
+.level-row{display:flex;align-items:flex-start;margin-bottom:2px}
+.level-lbl{font-size:11px;color:#aaa;width:130px;flex-shrink:0;padding-top:7px;line-height:1.3}
+.level-lbl.me{color:#1a56c4;font-weight:600}
+.people-row{display:flex;flex-wrap:wrap;gap:5px;flex:1}
+.pchip{display:flex;align-items:center;gap:5px;background:#fff;border:1px solid #e0dfd8;border-radius:20px;padding:4px 9px 4px 5px}
+.pchip.isme{border-color:#aac4f5;background:#e8f0fe}
+.pchip.isme .pcn{color:#1a56c4}
+.pchip.contacted{border-color:#1a56c4;background:#e8f0fe;cursor:pointer}
+.pchip.contacted .pcn{color:#1a56c4}
+.pchip.contacted::after{content:"✓";font-size:10px;color:#1a56c4;margin-left:3px;font-weight:700}
+.pchip-sel{cursor:pointer}
+.pchip-sel:hover{border-color:#aac4f5;background:#f0f4fe}
+.avsm{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:600;flex-shrink:0}
+.pcn{font-size:12px}
+.pcr{font-size:11px;color:#aaa}
+.vconn{width:1px;background:#e0dfd8;margin:0 0 0 129px;height:7px}
+/* GROUPS */
+.group-block{margin-bottom:1.5rem;border-radius:10px;border:1.5px solid #e0dfd8;overflow:hidden}
+.group-head{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;font-size:12px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase}
+.group-body{padding:10px 12px;display:flex;flex-wrap:wrap;gap:6px;background:#fff;min-height:44px}
+.group-body.drop-target{background:#f0f4fe;border-top:1.5px dashed #aac4f5}
+.gpchip{display:flex;align-items:center;gap:5px;background:#fff;border:1px solid #e0dfd8;border-radius:20px;padding:3px 8px 3px 5px;font-size:12px;cursor:pointer}
+.gpchip:hover{border-color:#e0a0a0}
+.gpchip::after{content:"×";font-size:13px;color:#ccc;margin-left:2px}
+.gpchip:hover::after{color:#c0392b}
+.add-group-row{display:flex;gap:6px;margin-bottom:1rem;max-width:440px}
+.add-group-row input{flex:1;padding:6px 10px;border:1px solid #d0cfd8;border-radius:8px;font-size:13px;outline:none}
+.add-group-row input:focus{border-color:#aac4f5}
+.add-group-row button{padding:6px 14px;border-radius:8px;border:1px solid #d0cfd8;background:#f5f4f0;font-size:12px;cursor:pointer}
+.people-pool{display:flex;flex-wrap:wrap;gap:6px;padding:8px 10px;background:#fff;border:1px solid #e0dfd8;border-radius:10px;min-height:52px;flex:1}
+.pool-dock{background:#fff;border:1px solid #e0dfd8;border-radius:10px;padding:10px 12px;margin-top:10px;flex-shrink:0}
+.pool-dock.drop-target{background:#f0f4fe;border-color:#aac4f5;box-shadow:inset 0 0 0 2px #aac4f5}
+.pool-dock-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.pool-dock-title{font-size:11px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:#888}
+.pool-dock-count{font-size:11px;color:#aaa}
+.pool-chip{display:flex;align-items:center;gap:5px;background:#f5f4f0;border:1px solid #e0dfd8;border-radius:20px;padding:4px 10px 4px 5px;font-size:12px;cursor:grab;touch-action:none;user-select:none}
+.pool-chip:active{cursor:grabbing}
+.pool-chip.dragging{opacity:0.45}
+.pool-chip:hover{background:#e8f0fe;border-color:#aac4f5}
+.group-actions{display:flex;gap:6px;align-items:center;padding:4px 10px;background:#e8f0fe;border-radius:8px;border:1px solid #aac4f5}
+.group-actions span{font-size:12px;font-weight:500;color:#1a56c4}
+/* NODE VIEW */
+#node-canvas{cursor:default}
+.node-controls{display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;align-items:center}
+.canvas-hint-panel{position:absolute;top:14px;left:14px;right:14px;z-index:10;background:rgba(244,247,254,0.97);border:1px solid #c0d4f5;border-radius:10px;padding:12px 16px;display:flex;align-items:flex-start;gap:12px;box-shadow:0 4px 16px rgba(0,0,0,0.08);backdrop-filter:blur(6px)}
+.canvas-hint-panel.hidden{display:none}
+.canvas-hint-icon{font-size:14px;color:#1a56c4;flex-shrink:0;margin-top:2px}
+.canvas-hint-body{flex:1;font-size:12px;color:#555;line-height:1.7}
+.canvas-hint-body ul{margin:0;padding:0;list-style:disc;padding-left:16px}
+.canvas-hint-body li{margin-bottom:2px}
+.canvas-hint-dismiss{background:none;border:none;color:#aaa;cursor:pointer;font-size:16px;line-height:1;padding:0;flex-shrink:0;margin-top:-1px}
+.canvas-hint-dismiss:hover{color:#333}
+.canvas-hint-reinvoke{position:absolute;top:14px;right:14px;z-index:10;background:rgba(255,255,255,0.9);border:1px solid #c0d4f5;border-radius:8px;color:#1a56c4;cursor:pointer;font-size:18px;width:32px;height:32px;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,0.08);backdrop-filter:blur(4px);line-height:1}
+.canvas-hint-reinvoke:hover{background:#e8f0fe;border-color:#1a56c4}
+.canvas-wrap{position:relative;flex:1;min-height:260px;overflow:hidden}
+.canvas-wrap canvas{position:absolute;inset:0;width:100%!important;height:100%!important}
+.nodes-layout{display:flex;flex-direction:column;height:calc(100vh - 156px)}
+.pool-dock{flex-shrink:0;background:#fff;border:2px solid #d0cfd8;border-radius:12px;padding:10px 14px;margin-top:10px;transition:background 0.15s,border-color 0.15s,box-shadow 0.15s}
+.pool-dock.drop-target{background:#fffbeb;border-color:#f59e0b;box-shadow:0 0 0 3px #fde68a,inset 0 0 0 2px #fde68a}
+.node-legend{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.leg-item{display:flex;align-items:center;gap:4px;font-size:11px;color:#666}
+.leg-dot{width:10px;height:10px;border-radius:50%}
+/* TAGS TAB */
+.tag-list{display:flex;flex-direction:column;gap:6px;max-width:440px}
+.tag-row{display:flex;align-items:center;gap:6px}
+.tag-row input{flex:1;padding:5px 9px;border:1px solid #d0cfd8;border-radius:8px;font-size:13px;font-family:inherit;outline:none}
+.tag-row input:focus{border-color:#aac4f5}
+.tag-row button{padding:4px 9px;border-radius:8px;border:1px solid #e0a0a0;background:#fff;color:#c0392b;font-size:12px;cursor:pointer}
+.add-tag-row{display:flex;gap:6px;margin-top:10px;max-width:440px}
+.add-tag-row input{flex:1;padding:6px 10px;border:1px solid #d0cfd8;border-radius:8px;font-size:13px;outline:none}
+.add-tag-row input:focus{border-color:#aac4f5}
+.add-tag-row button{padding:6px 14px;border-radius:8px;border:1px solid #d0cfd8;background:#f5f4f0;font-size:12px;cursor:pointer}
+/* CONNECTIONS */
+.conn-list{max-width:540px}
+.conn-row{display:flex;align-items:center;gap:8px;margin-bottom:8px;background:#fff;border:1px solid #e0dfd8;border-radius:8px;padding:8px 12px}
+.conn-label-badge{font-size:11px;padding:2px 8px;border-radius:20px;background:#fef3e2;border:1px solid #f5c842;color:#7a5200}
+.conn-names{font-size:13px;color:#1a1a18;flex:1}
+.conn-arrow{color:#aaa;font-size:12px}
+/* MODALS */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.35);z-index:200;align-items:center;justify-content:center}
+.overlay.open{display:flex}
+.modal{background:#fff;border-radius:12px;border:1px solid #e0dfd8;padding:1.5rem;width:100%;max-width:500px;margin:1rem;max-height:90vh;overflow-y:auto}
+.modal h3{font-size:15px;font-weight:500;margin-bottom:1.1rem}
+.field{margin-bottom:11px}
+.field label{display:block;font-size:11px;color:#888;margin-bottom:3px}
+.field input,.field select,.field textarea{width:100%;padding:7px 10px;border:1px solid #d0cfd8;border-radius:8px;font-size:13px;font-family:inherit;outline:none;background:#fff}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:#aac4f5}
+.field textarea{height:60px;resize:vertical}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.mactions{display:flex;gap:8px;justify-content:flex-end;margin-top:1.1rem}
+.mbtn{font-size:13px;padding:7px 16px;border-radius:8px;cursor:pointer;border:1px solid #d0cfd8;background:#f5f4f0;color:#555}
+.mbtn.primary{background:#1a56c4;border-color:#1a56c4;color:#fff;font-weight:500}
+.mbtn.primary:hover{background:#1446a8}
+.mbtn.danger{background:#fff;border-color:#e0a0a0;color:#c0392b}
+.cb-grid{display:flex;flex-wrap:wrap;gap:5px 14px;margin-top:5px}
+.cb-grid label{display:flex;align-items:center;gap:5px;font-size:13px;color:#333;cursor:pointer}
+.tag-chip-wrap{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 6px}
+.modal-tag-chip{font-size:12px;padding:3px 8px 3px 12px;border-radius:20px;border:1.5px solid #d0cfd8;background:#fff;color:#555;cursor:pointer;transition:background .12s,border-color .12s,color .12s;user-select:none;display:inline-flex;align-items:center;gap:4px}
+.modal-tag-chip span{cursor:pointer}
+.modal-tag-chip.active{background:#e8f0fe;border-color:#1a56c4;color:#1a56c4;font-weight:500}
+.modal-tag-chip:hover:not(.active){background:#f5f4f0;border-color:#bbb}
+.modal-tag-chip.role-tag{border-color:#e5e4de}
+.modal-tag-chip.role-tag.active{background:#e8f0fe;border-color:#1a56c4;color:#1a56c4}
+.role-pip{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;background:#f59e0b;color:#fff;border-radius:3px;padding:1px 4px;margin-left:5px;vertical-align:middle;opacity:.9}
+/* Tags & Roles management tab */
+.trm-layout{display:flex;gap:16px;align-items:flex-start;padding-bottom:40px}
+.trm-col{flex:1;min-width:0}
+.trm-section{background:#fff;border:1.5px solid #e5e4de;border-radius:12px;padding:16px 18px}
+.trm-section-priority{height:100%}
+.trm-section-head{font-size:13px;font-weight:600;color:#333;margin-bottom:4px}
+.trm-desc{font-size:12px;color:#999;margin:0 0 12px;line-height:1.5}
+.trm-priority-empty{text-align:center;padding:32px 16px;color:#ccc}
+.trm-col-headers{display:flex;align-items:center;gap:10px;padding:0 0 6px;border-bottom:1px solid #f0efe9;margin-bottom:2px}
+.trm-col-tag{flex:1;font-size:11px;font-weight:600;color:#bbb;text-transform:uppercase;letter-spacing:.05em;padding-left:36px}
+.trm-col-role{font-size:11px;font-weight:600;color:#bbb;text-transform:uppercase;letter-spacing:.05em;min-width:80px;text-align:center;margin-right:24px}
+.trm-row{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid #f0efe9}
+.trm-row:last-child{border-bottom:none}
+.trm-swatch{width:26px;height:26px;border-radius:50%;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.trm-name{flex:1;border:1px solid transparent;border-radius:6px;padding:4px 8px;font-size:13px;color:#333;background:transparent;outline:none}
+.trm-name:hover{border-color:#e0dfd8;background:#fafaf8}
+.trm-name:focus{border-color:#1a56c4;background:#fff;box-shadow:0 0 0 2px #e8f0fe}
+.trm-toggle{display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none;flex-shrink:0}
+.trm-toggle-track{width:34px;height:18px;border-radius:9px;background:#ddd;position:relative;transition:background .15s;flex-shrink:0}
+.trm-toggle-track.on{background:#f59e0b}
+.trm-toggle-thumb{position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:#fff;transition:left .15s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.trm-toggle-track.on .trm-toggle-thumb{left:18px}
+.trm-toggle-lbl{font-size:11px;color:#aaa;min-width:28px}
+.trm-toggle-lbl.on{color:#d97706;font-weight:600}
+.trm-del{background:none;border:none;color:#ccc;cursor:pointer;font-size:14px;padding:2px 4px;border-radius:4px;transition:color .1s,background .1s}
+.trm-del:hover{color:#c0392b;background:#fce8e4}
+.trm-priority-row{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;background:#fafaf8;border:1.5px solid #e5e4de;margin-bottom:5px;cursor:default;transition:box-shadow .12s,border-color .12s}
+.trm-priority-row:hover{border-color:#d0cfd8;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.trm-rank{font-size:11px;color:#ccc;font-weight:700;min-width:18px}
+.trm-badge{font-size:12px;font-weight:600;padding:3px 10px;border-radius:20px}
+.rp-dragging{opacity:.4;box-shadow:0 4px 16px rgba(0,0,0,.12)}
+.rp-over{border-color:#1a56c4!important;box-shadow:0 0 0 2px #bbd4ff!important}
+/* Role hierarchy view */
+.role-band{background:#fff;border:1.5px solid #e5e4de;border-radius:12px;margin-bottom:6px;overflow:hidden;transition:box-shadow .15s,border-color .15s}
+.role-band:hover{border-color:#d0cfd8;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.role-band-header{display:flex;align-items:center;gap:8px;padding:10px 14px 8px;border-bottom:1px solid #f0efe9;background:#fafaf8}
+.role-drag-handle{font-size:16px;color:#ccc;cursor:grab;user-select:none;flex-shrink:0}
+.role-drag-handle:active{cursor:grabbing}
+.role-badge{font-size:12px;font-weight:600;padding:3px 10px;border-radius:20px;letter-spacing:.01em}
+.role-count{font-size:12px;color:#aaa;margin-left:auto}
+.role-rank{font-size:11px;color:#ccc;font-weight:700;min-width:24px;text-align:right}
+.role-band-people{display:flex;flex-wrap:wrap;gap:6px;padding:10px 14px}
+.role-band-unassigned{border-style:dashed;opacity:.7}
+.role-band-dragging{opacity:.45;box-shadow:0 4px 16px rgba(0,0,0,.15)}
+.role-band-over{border-color:#1a56c4!important;box-shadow:0 0 0 2px #bbd4ff!important}
+.add-tag-row{display:flex;gap:6px;margin-top:4px}
+.add-tag-row input{flex:1;border:1px solid #ddd;border-radius:8px;padding:5px 10px;font-size:12px;outline:none}
+.add-tag-row input:focus{border-color:#1a56c4;box-shadow:0 0 0 2px #e8f0fe}
+.add-tag-row button{padding:5px 12px;border-radius:8px;border:1px solid #d0cfd8;background:#f0efe9;color:#555;font-size:12px;cursor:pointer}
+.add-tag-row button:hover{background:#e0dfd8}
+.org-colors{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+.color-swatch{width:24px;height:24px;border-radius:50%;cursor:pointer;border:3px solid transparent;outline:3px solid transparent;outline-offset:2px;transition:outline-color .12s,transform .12s}
+.color-swatch:hover{transform:scale(1.15)}
+.color-swatch.selected{outline-color:#1a1a18;transform:scale(1.15)}
+/* ── group link dialog ── */
+#gl-dialog{position:fixed;z-index:9999;background:#fff;border:1px solid #e0dfd8;border-radius:14px;box-shadow:0 8px 32px rgba(0,0,0,0.13);padding:18px 20px 16px;min-width:260px;display:none;flex-direction:column;gap:10px}
+#gl-dialog h4{margin:0;font-size:13px;font-weight:600;color:#333}
+#gl-dialog input[type=text]{width:100%;box-sizing:border-box;border:1px solid #ddd;border-radius:8px;padding:7px 10px;font-size:13px;outline:none}
+#gl-dialog input[type=text]:focus{border-color:#1a56c4;box-shadow:0 0 0 2px #e8f0fe}
+.gl-dir-row{display:flex;gap:6px}
+.gl-dir-btn{flex:1;padding:6px 4px;border:1.5px solid #ddd;border-radius:8px;background:#fff;font-size:13px;cursor:pointer;transition:all .15s;color:#555;text-align:center}
+.gl-dir-btn.active{border-color:#1a56c4;background:#e8f0fe;color:#1a56c4;font-weight:600}
+.gl-act-row{display:flex;gap:8px;margin-top:2px}
+.gl-act-row button{flex:1;padding:7px;border-radius:8px;font-size:13px;cursor:pointer;border:none}
+#gl-confirm{background:#1a56c4;color:#fff;font-weight:600}
+#gl-confirm:hover{background:#1648a8}
+#gl-cancel{background:#f3f2ef;color:#555}
+#gl-cancel:hover{background:#e8e6e0}
+#gl-delete{background:#fff0f0;color:#c0392b;border:1px solid #f5c6c6!important;flex:0 0 auto;padding:7px 12px}
+#gl-delete:hover{background:#fde8e8}
+.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center;padding:2rem}
+.empty-state-icon{color:#ccc;margin-bottom:4px}
+.empty-state h2{font-size:20px;font-weight:500;color:#1a1a18;margin:0}
+.empty-state p{font-size:14px;color:#888;font-weight:400;margin:0;max-width:340px;line-height:1.5}
+.empty-state-actions{display:flex;gap:10px;margin-top:4px}
+.empty-state-actions .esbtn{padding:9px 18px;font-size:14px;border-radius:8px;cursor:pointer;font-weight:500;border:none}
+.empty-state-actions .esbtn.primary{background:#2563eb;color:#fff}
+.empty-state-actions .esbtn.primary:hover{background:#1d4ed8}
+.empty-state-actions .esbtn.secondary{background:#f5f4f0;color:#555;border:1px solid #e0dfd8}
+.empty-state-actions .esbtn.secondary:hover{background:#e8e7e0;color:#1a1a18}
+</style>
+</head>
+<body>
+<input type="file" id="import-input" accept=".json" style="display:none" onchange="importJSON(event)">
+
+<div class="sidebar" id="sidebar">
+  <div class="sidebar-header">
+    <div class="sidebar-title">Organisations</div>
+  </div>
+  <div class="org-list" id="org-list"></div>
+  <button class="add-org-btn" onclick="openOrgModal()">+ New organisation</button>
+  <div class="sidebar-footer">
+    <div class="sf-block">
+      <div class="sf-label" style="display:flex;align-items:center;justify-content:space-between">
+        Auto-save
+        <button onclick="openStorageModal()" style="background:none;border:none;color:#aaa;cursor:pointer;font-size:13px;padding:0;line-height:1" title="About browser storage">ⓘ</button>
+      </div>
+      <div class="sidebar-save-status" id="save-status">Saved to browser storage</div>
+      <div class="sf-note">All organisations · this browser only</div>
+    </div>
+    <div class="sf-block">
+      <div class="sf-label">File backup</div>
+      <div class="sf-note">Export a .json file to your computer to back up or share all data.</div>
+      <div class="sidebar-actions-row">
+        <button class="sidebar-action" onclick="exportJSON()">&#8659; Export</button>
+        <button class="sidebar-action" onclick="document.getElementById('import-input').click()">&#8657; Import</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="main">
+  <div class="topbar" id="topbar" style="display:none">
+    <span class="org-name" id="org-name-display"></span>
+    <div class="topbar-actions">
+      <button class="tbtn" onclick="openOrgModal(true)">Edit org</button>
+      <button class="tbtn" onclick="copyText()">Copy</button>
+      <button class="tbtn primary" onclick="openPersonModal()">+ Add person</button>
+    </div>
+  </div>
+  <div id="tab-bar" style="display:none">
+    <div class="tabs">
+      <button class="tab active" id="tab-dir" onclick="setTab('dir')">Directory</button>
+      <button class="tab" id="tab-tree" onclick="setTab('tree')">Tree</button>
+      <button class="tab" id="tab-nodes" onclick="setTab('nodes')">Connections &amp; Groups</button>
+      <button class="tab" id="tab-tags" onclick="setTab('tags')">Tags &amp; Roles</button>
+    </div>
+  </div>
+  <div class="content" id="content-area"></div>
+</div>
+
+<!-- PERSON MODAL -->
+<div class="overlay" id="person-modal">
+  <div class="modal">
+    <h3 id="pm-title">Add person</h3>
+    <div class="field"><label>Name</label><input type="text" id="f-name"></div>
+    <div class="field">
+      <label>Tags <span style="font-weight:400;color:#999;font-size:11px">— roles, workstreams, projects… comma-separate to add multiple</span></label>
+      <div class="tag-chip-wrap" id="modal-tag-chips"></div>
+      <div class="add-tag-row">
+        <input type="text" id="new-tag-input" placeholder="e.g.  Designer, Q3 project, Client A" maxlength="200"
+               onkeydown="if(event.key==='Enter'){event.preventDefault();addModalTag()}">
+        <button onclick="addModalTag()">+ Add</button>
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Status</label>
+        <select id="f-status" onchange="toggleAwayDate()"><option value="available">Available</option><option value="away">Away</option></select>
+      </div>
+      <div class="field" id="away-date-field" style="display:none"><label>Return date</label><input type="date" id="f-away"></div>
+    </div>
+    <div class="field"><label>Notes</label><textarea id="f-notes"></textarea></div>
+    <div class="mactions">
+      <button class="mbtn" onclick="closePersonModal()">Cancel</button>
+      <button class="mbtn primary" onclick="savePerson()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- ORG MODAL -->
+<div class="overlay" id="org-modal">
+  <div class="modal" style="max-width:400px">
+    <h3 id="om-title">New organisation</h3>
+    <div class="field"><label>Name</label><input type="text" id="o-name" placeholder="e.g. My organisation"></div>
+    <div class="field"><label>Colour</label><div class="org-colors" id="org-color-picker"></div></div>
+    <div class="mactions" id="org-modal-actions"></div>
+  </div>
+</div>
+
+<!-- CONNECTION MODAL -->
+<div class="overlay" id="conn-modal">
+  <div class="modal" style="max-width:420px">
+    <h3 id="cm-title">Add connection</h3>
+    <div class="field"><label>From</label><select id="c-from"></select></div>
+    <div class="field"><label>Relationship</label><input type="text" id="c-label" placeholder="e.g. reports to, sponsors, influences, blocks"></div>
+    <div class="field"><label>To</label><select id="c-to"></select></div>
+    <div class="mactions">
+      <button class="mbtn" onclick="closeConnModal()">Cancel</button>
+      <button class="mbtn primary" onclick="saveConn()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- CAMPAIGN MODAL -->
+<div class="overlay" id="campaign-modal">
+  <div class="modal" style="max-width:380px">
+    <h3 id="cpam-title">New campaign</h3>
+    <div class="field"><label>Name</label><input type="text" id="cp-name" placeholder="e.g. delivering project X"></div>
+    <div class="mactions">
+      <button class="mbtn" onclick="closeCampaignModal()">Cancel</button>
+      <button class="mbtn primary" id="cp-save-btn" onclick="saveCampaign()">Create</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const SK='teamdir-v3';
+const ORG_COLORS=['#e8514a','#e88c3a','#e8c43a','#4caf50','#2196f3','#9c27b0','#00bcd4','#ff5722','#607d8b','#795548'];
+const AV_PAL=[['#e8f0fe','#1a56c4'],['#e1f5ee','#085041'],['#ede8fe','#4a2db5'],['#fef3e2','#7a5200'],['#fce8f0','#7a1a3e'],['#e6f4ea','#1e6e3a']];
+const TAG_COLORS=['#e8f0fe','#e1f5ee','#ede8fe','#fef3e2','#fce8f0','#e6f4ea','#fce8e4','#f0f4e8'];
+const TAG_FG=['#1a56c4','#085041','#4a2db5','#7a5200','#7a1a3e','#1e6e3a','#7a2010','#3a5010'];
+const GROUP_COLORS=[
+  ['#fff8e1','#f59f00'],['#e8f5e9','#2e7d32'],['#fce4ec','#c2185b'],
+  ['#e3f2fd','#1565c0'],['#f3e5f5','#6a1b9a'],['#e0f2f1','#00695c'],
+  ['#fbe9e7','#bf360c'],['#eceff1','#455a64']
+];
+const LEVELS=[
+  {key:'director',label:'Director',match:['director']},
+  {key:'senior_manager',label:'Senior manager',match:['senior manager']},
+  {key:'manager',label:'Manager',match:['manager']},
+  {key:'managing_consultant',label:'Managing consultant',match:['managing consultant']},
+  {key:'senior',label:'Senior',match:['senior designer','senior researcher','senior strategist','senior consultant','senior ux','senior product','senior']},
+  {key:'consultant',label:'Consultant',match:['consultant']},
+  {key:'mid',label:'Mid-level',match:['designer','researcher','strategist','ux designer','product designer','visual designer']},
+  {key:'associate',label:'Associate / junior',match:['associate','junior','grad']},
+  {key:'other',label:'Other',match:[]},
+];
+
+let db={orgs:[]};
+let activeOrgId=null;
+let activeTab='dir';
+let dirFilter='all';
+let treeView='tag'; // 'level' removed
+let activeCampaign=null;
+let editingPersonId=null;
+let editingOrg=false;
+let modalSelectedTags=[];
+let editingCampaign=false;
+let selectedOrgColor=ORG_COLORS[4];
+
+// canvas state
+let nodePositions={};
+let canvasDrag=null;
+let hoverGroupId=null;
+let hoverPersonId=null;
+let hoverConnId=null;
+let hoverGroupLinkId=null;
+let canvasOffset={x:0,y:0};
+let canvasScale=1;
+let selectedGroupId=null;
+let selectedPersonId=null;
+let poolDragPid=null;
+let canvasDrawFn=null;
+
+function ini(n){return n.trim().split(' ').filter(Boolean).map(w=>w[0].toUpperCase()).slice(0,2).join('');}
+function avc(n){let h=0;for(let c of n)h=(h*31+c.charCodeAt(0))&0xffff;return AV_PAL[h%AV_PAL.length];}
+function tagColor(tag,tags){const i=tags.indexOf(tag)%TAG_COLORS.length;return[TAG_COLORS[Math.max(0,i)],TAG_FG[Math.max(0,i)]];}
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2);}
+function clf(r){if(!r)return'other';const s=r.toLowerCase();for(const l of LEVELS){if(l.match.some(m=>s.includes(m)))return l.key;}return'other';}
+function ll(k){return LEVELS.find(l=>l.key===k)?.label||'Other';}
+function lo(k){return LEVELS.findIndex(l=>l.key===k);}
+function isMe(p){return clf(p.role)==='managing_consultant';}
+function org(){return db.orgs.find(o=>o.id===activeOrgId)||null;}
+
+function statusDot(p){
+  if(!p.status||p.status==='available')return'';
+  const col='#c0392b';
+  let ds='';
+  if(p.away){const d=new Date(p.away);ds=' '+d.toLocaleDateString('en-GB',{day:'numeric',month:'short'});}
+  return`<span style="display:inline-flex;align-items:center;gap:2px;margin-left:3px"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:${col}"></span>${ds?`<span style="font-size:10px;color:${col};font-weight:500">${ds}</span>`:''}</span>`;
+}
+
+function toggleAwayDate(){
+  const isAway=document.getElementById('f-status').value==='away';
+  document.getElementById('away-date-field').style.display=isAway?'':'none';
+  if(!isAway)document.getElementById('f-away').value='';
+}
+
+// ── DB ─────────────────────────────────────────────────────
+function loadDB(){
+  try{const d=localStorage.getItem(SK);if(d)db=JSON.parse(d);}catch(e){}
+  if(!db.orgs)db.orgs=[];
+  db.orgs.forEach(o=>{
+    if(!o.tags)o.tags=[];
+    if(!o.groups)o.groups=[];
+    if(!o.campaigns)o.campaigns=[];
+    if(!o.connections)o.connections=[];
+    if(!o.groupLinks)o.groupLinks=[];
+    if(!o.roleTags)o.roleTags=[];
+    if(!o.roleOrder)o.roleOrder=[];
+    if(!o.people)o.people=[];
+    if(!o.layout)o.layout={nodes:{},groups:{}};
+    if(!o.layout.nodes)o.layout.nodes={};
+    if(!o.layout.groups)o.layout.groups={};
+    // migrate sector->tags
+    o.people.forEach(p=>{if(p.sector&&!p.tags){p.tags=p.sector.split(',').map(s=>s.trim()).filter(Boolean);delete p.sector;}if(!p.tags)p.tags=[];});
+  });
+}
+
+function loadLayout(){
+  const o=org();if(!o)return;
+  nodePositions={...(o.layout?.nodes||{})};
+}
+function pointInEllipse(x,y,cx,cy,rx,ry){
+  if(!rx||!ry)return false;
+  const dx=(x-cx)/rx,dy=(y-cy)/ry;
+  return dx*dx+dy*dy<=1;
+}
+function poolPeople(o){return o.people.filter(p=>!(p.groups||[]).length);}
+function assignedPeople(o){return o.people.filter(p=>(p.groups||[]).length);}
+function removeFromAllGroups(pid){
+  const o=org();if(!o)return;
+  const p=o.people.find(x=>x.id===pid);if(!p)return;
+  p.groups=[];
+  o.connections=o.connections.filter(c=>c.from!==pid&&c.to!==pid);
+  saveDB();
+}
+function assignToGroup(pid,gid){
+  const o=org();if(!o)return;
+  const p=o.people.find(x=>x.id===pid);if(!p)return;
+  p.groups=[gid];
+  saveDB();
+}
+function syncLayout(){
+  const o=org();if(!o)return;
+  if(!o.layout)o.layout={nodes:{},groups:{}};
+  // Group centers are updated in-place during drag; just persist
+  saveDB();
+}
+function getGroupCircle(g,o){
+  // Size is purely count-based — never expands from dragging
+  const members=o.people.filter(p=>(p.groups||[]).includes(g.id));
+  const minR=58, perMember=28;
+  const r=minR+members.length*perMember;
+  const lay=o.layout?.groups?.[g.id];
+  if(!lay)return null;
+  return{cx:lay.x,cy:lay.y,r};
+}
+function getMemberPos(pid,gid,o){
+  const g=o.groups.find(x=>x.id===gid);if(!g)return null;
+  const c=getGroupCircle(g,o);if(!c)return null;
+  const members=o.people.filter(p=>(p.groups||[]).includes(gid));
+  const idx=members.findIndex(p=>p.id===pid);
+  const n=members.length;
+  if(n===0)return null;
+  if(n===1)return{x:c.cx,y:c.cy};
+  const angle=(idx/n)*Math.PI*2-Math.PI/2;
+  const pr=Math.min(c.r*0.55,c.r-34);
+  return{x:c.cx+pr*Math.cos(angle),y:c.cy+pr*Math.sin(angle)};
+}
+function getGroupAt(mx,my,o){
+  for(let i=o.groups.length-1;i>=0;i--){
+    const g=o.groups[i];
+    const c=getGroupCircle(g,o);
+    if(c&&Math.hypot(mx-c.cx,my-c.cy)<=c.r)return g.id;
+  }
+  return null;
+}
+function getPersonAt(mx,my,o){
+  return o.people.find(p=>{
+    const gid=(p.groups||[])[0];if(!gid)return false;
+    const pos=getMemberPos(p.id,gid,o);if(!pos)return false;
+    // avatar circle (r=20) with generous buffer
+    if(Math.hypot(pos.x-mx,pos.y-my)<28)return true;
+    // name label area: below the circle
+    if(mx>=pos.x-52&&mx<=pos.x+52&&my>=pos.y+18&&my<=pos.y+40)return true;
+    return false;
+  })||null;
+}
+function isOverPoolDock(clientX,clientY){
+  const dock=document.getElementById('pool-dock');
+  if(!dock)return false;
+  const r=dock.getBoundingClientRect();
+  return clientX>=r.left&&clientX<=r.right&&clientY>=r.top&&clientY<=r.bottom;
+}
+function refreshPoolDock(){
+  const o=org();if(!o||activeTab!=='nodes')return;
+  const pool=poolPeople(o);
+  const chips=document.getElementById('pool-chips');
+  const count=document.getElementById('pool-count');
+  if(!chips)return;
+  if(count)count.textContent=pool.length+' unassigned';
+  chips.innerHTML=pool.length?pool.map(p=>{
+    const[bg,fg]=avc(p.name);
+    return`<div class="pool-chip" data-pid="${p.id}"><div class="avsm" style="background:${bg};color:${fg}">${ini(p.name)}</div>${p.name}</div>`;
+  }).join(''):'<span style="font-size:12px;color:#ccc;padding:4px 2px">Drag people here to unassign · everyone starts here</span>';
+  initPoolDrag();
+  updateGroupActions();
+}
+function updateGroupActions(){
+  const bar=document.getElementById('group-actions');
+  if(!bar)return;
+  const o=org();if(!o||!selectedGroupId){bar.style.display='none';return;}
+  const g=o.groups.find(x=>x.id===selectedGroupId);
+  if(!g){bar.style.display='none';return;}
+  bar.style.display='flex';
+  document.getElementById('sel-group-name').textContent=g.name;
+}
+function renameSelectedGroup(){if(selectedGroupId)renameGroupPrompt(selectedGroupId);}
+function deleteSelectedGroup(){
+  if(!selectedGroupId)return;
+  const o=org();if(!o)return;
+  const g=o.groups.find(x=>x.id===selectedGroupId);
+  if(g&&confirm('Delete group "'+g.name+'"? People will move to the pool.'))deleteGroup(selectedGroupId);
+}
+// Compute the quadratic bezier control point for a person connection,
+// curving away from group circles so the arc uses the open space.
+function connControlPoint(a,b,gida,gidb,o){
+  const mx2=(a.x+b.x)/2, my2=(a.y+b.y)/2;
+  const dx=b.x-a.x, dy=b.y-a.y, len=Math.hypot(dx,dy)||1;
+  const curve=Math.min(70,len*0.38);
+  const cp1={x:mx2-dy/len*curve, y:my2+dx/len*curve};
+  const cp2={x:mx2+dy/len*curve, y:my2-dx/len*curve};
+  // score each candidate by distance from group circles — pick the one with more open space
+  function clearance(cp){
+    let d=Infinity;
+    [gida,gidb].forEach(gid=>{
+      if(!gid)return;
+      const g=o.groups.find(x=>x.id===gid);
+      const c=g?getGroupCircle(g,o):null;
+      if(c)d=Math.min(d,Math.hypot(cp.x-c.cx,cp.y-c.cy)-c.r);
+    });
+    return d===Infinity?0:d;
+  }
+  return clearance(cp1)>=clearance(cp2)?cp1:cp2;
+}
+
+function getConnAt(mx,my,o){
+  let best=null,bestD=14;
+  o.connections.forEach(c=>{
+    const pa=o.people.find(x=>x.id===c.from), pb=o.people.find(x=>x.id===c.to);
+    if(!pa||!pb)return;
+    const gida=(pa.groups||[])[0], gidb=(pb.groups||[])[0];
+    if(!gida||!gidb)return;
+    const a=getMemberPos(c.from,gida,o), b=getMemberPos(c.to,gidb,o);
+    if(!a||!b)return;
+    const cp=connControlPoint(a,b,gida,gidb,o);
+    for(let t=0;t<=1;t+=0.05){
+      const bx=(1-t)*(1-t)*a.x+2*(1-t)*t*cp.x+t*t*b.x;
+      const by=(1-t)*(1-t)*a.y+2*(1-t)*t*cp.y+t*t*b.y;
+      if(Math.hypot(mx-bx,my-by)<bestD){bestD=Math.hypot(mx-bx,my-by);best=c;}
+    }
+  });
+  return best;
+}
+// ── GROUP LINKS ────────────────────────────────────────────
+// Returns {sx,sy,ex,ey,mx,my,angle} for drawing a line between two group circles
+function groupLinkGeom(gl,o){
+  const ga=o.groups.find(x=>x.id===gl.from), gb=o.groups.find(x=>x.id===gl.to);
+  if(!ga||!gb)return null;
+  const ca=getGroupCircle(ga,o), cb=getGroupCircle(gb,o);
+  if(!ca||!cb)return null;
+  const dx=cb.cx-ca.cx, dy=cb.cy-ca.cy;
+  const dist=Math.hypot(dx,dy);if(dist<1)return null;
+  const ux=dx/dist, uy=dy/dist;
+  return{
+    sx:ca.cx+ux*ca.r, sy:ca.cy+uy*ca.r,
+    ex:cb.cx-ux*cb.r, ey:cb.cy-uy*cb.r,
+    mx:(ca.cx+cb.cx)/2, my:(ca.cy+cb.cy)/2,
+    angle:Math.atan2(dy,dx)
+  };
+}
+function getGroupLinkAt(mx,my,o){
+  let best=null,bestD=10;
+  (o.groupLinks||[]).forEach(gl=>{
+    const g=groupLinkGeom(gl,o);if(!g)return;
+    // point-to-segment distance
+    const dx=g.ex-g.sx, dy=g.ey-g.sy, len2=dx*dx+dy*dy;
+    const t=len2?Math.max(0,Math.min(1,((mx-g.sx)*dx+(my-g.sy)*dy)/len2)):0;
+    const px=g.sx+t*dx, py=g.sy+t*dy;
+    const d=Math.hypot(mx-px,my-py);
+    if(d<bestD){bestD=d;best=gl;}
+  });
+  return best;
+}
+function deleteGroupLink(id){
+  const o=org();if(!o)return;
+  o.groupLinks=o.groupLinks.filter(gl=>gl.id!==id);
+  saveDB();
+}
+
+let _glDialogCb=null;
+function showGroupLinkDialog(opts){
+  // opts: {x,y,fromName,toName,label,dir,editId,onSave,onDelete}
+  const dlg=document.getElementById('gl-dialog');
+  const title=document.getElementById('gl-title');
+  const labelEl=document.getElementById('gl-label');
+  const confirmBtn=document.getElementById('gl-confirm');
+  const cancelBtn=document.getElementById('gl-cancel');
+  const deleteBtn=document.getElementById('gl-delete');
+  const dirBtns=dlg.querySelectorAll('.gl-dir-btn');
+
+  // Update direction button labels with actual group names
+  const a=opts.fromName||'A', b=opts.toName||'B';
+  document.getElementById('gl-fwd').textContent=a+' → '+b;
+  document.getElementById('gl-bwd').textContent=a+' ← '+b;
+  document.getElementById('gl-both').textContent=a+' ↔ '+b;
+
+  title.textContent=opts.editId?'Edit link':'New link: '+a+' ↔ '+b;
+  labelEl.value=opts.label||'';
+  deleteBtn.style.display=opts.editId?'block':'none';
+
+  // set active direction
+  let selDir=opts.dir||'fwd';
+  dirBtns.forEach(b=>{b.classList.toggle('active',b.dataset.dir===selDir);});
+  dirBtns.forEach(btn=>btn.onclick=()=>{
+    selDir=btn.dataset.dir;
+    dirBtns.forEach(b=>b.classList.toggle('active',b.dataset.dir===selDir));
+  });
+
+  // position near click, but keep on screen
+  dlg.style.display='flex';
+  const dw=dlg.offsetWidth||280, dh=dlg.offsetHeight||180;
+  const px=Math.min(opts.x, window.innerWidth-dw-16);
+  const py=Math.min(opts.y, window.innerHeight-dh-16);
+  dlg.style.left=Math.max(8,px)+'px';
+  dlg.style.top=Math.max(8,py)+'px';
+
+  setTimeout(()=>labelEl.focus(),50);
+
+  const close=()=>{dlg.style.display='none';_glDialogCb=null;};
+  confirmBtn.onclick=()=>{
+    close();
+    opts.onSave&&opts.onSave(labelEl.value.trim(),selDir);
+  };
+  cancelBtn.onclick=close;
+  deleteBtn.onclick=()=>{close();opts.onDelete&&opts.onDelete();};
+  // close on Escape
+  _glDialogCb=(ev)=>{if(ev.key==='Escape')close();if(ev.key==='Enter'&&ev.target===labelEl)confirmBtn.click();};
+  document.addEventListener('keydown',_glDialogCb,{once:true});
+}
+let _saveTimer=null;
+function saveDB(){
+  try{localStorage.setItem(SK,JSON.stringify(db));}catch(e){}
+  const el=document.getElementById('save-status');if(!el)return;
+  el.textContent='Saving…';el.className='sidebar-save-status saving';
+  clearTimeout(_saveTimer);
+  _saveTimer=setTimeout(()=>{
+    const now=new Date();
+    el.textContent='Saved at '+now.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+    el.className='sidebar-save-status saved';
+    setTimeout(()=>{el.textContent='Saved to browser storage';el.className='sidebar-save-status';},3000);
+  },400);
+}
+
+// ── SIDEBAR ────────────────────────────────────────────────
+function renderSidebar(){
+  const hasorgs=db.orgs.length>0;
+  document.getElementById('sidebar').style.display=hasorgs?'':'none';
+  document.getElementById('org-list').innerHTML=db.orgs.map(o=>`
+    <div class="org-item${o.id===activeOrgId?' active':''}" onclick="selectOrg('${o.id}')">
+      <span class="org-dot" style="background:${o.color||'#888'}"></span>${o.name}
+    </div>`).join('');
+}
+
+function selectOrg(id){
+  activeOrgId=id;activeTab='dir';activeCampaign=null;dirFilter='all';
+  loadLayout();
+  renderSidebar();renderMain();
+}
+
+// ── ORG MODAL ──────────────────────────────────────────────
+function initColorPicker(){
+  document.getElementById('org-color-picker').innerHTML=ORG_COLORS.map(c=>
+    `<div class="color-swatch${c===selectedOrgColor?' selected':''}" data-color="${c}" style="background:${c}" onclick="pickColor('${c}')"></div>`).join('');
+}
+function pickColor(c){
+  selectedOrgColor=c;
+  document.querySelectorAll('.color-swatch').forEach(s=>s.classList.toggle('selected',s.dataset.color===c));
+}
+function openOrgModal(isEdit){
+  editingOrg=!!isEdit;
+  const o=isEdit?org():null;
+  document.getElementById('om-title').textContent=o?'Edit organisation':'New organisation';
+  document.getElementById('o-name').value=o?o.name:'';
+  selectedOrgColor=o?o.color:ORG_COLORS[4];
+  initColorPicker();
+  document.getElementById('org-modal-actions').innerHTML=o
+    ?`<button class="mbtn danger" onclick="deleteOrg()">Delete</button><button class="mbtn" onclick="closeOrgModal()">Cancel</button><button class="mbtn primary" onclick="saveOrg()">Save</button>`
+    :`<button class="mbtn" onclick="closeOrgModal()">Cancel</button><button class="mbtn primary" onclick="saveOrg()">Create</button>`;
+  document.getElementById('org-modal').classList.add('open');
+  setTimeout(()=>document.getElementById('o-name').focus(),50);
+}
+function closeOrgModal(){document.getElementById('org-modal').classList.remove('open');}
+function saveOrg(){
+  const name=document.getElementById('o-name').value.trim();if(!name)return;
+  if(editingOrg&&org()){org().name=name;org().color=selectedOrgColor;}
+  else{const o={id:uid(),name,color:selectedOrgColor,tags:[],groups:[],people:[],campaigns:[],connections:[],groupLinks:[],roleTags:[],roleOrder:[],layout:{nodes:{},groups:{}}};db.orgs.push(o);activeOrgId=o.id;}
+  saveDB();closeOrgModal();renderSidebar();renderMain();
+}
+function deleteOrg(){
+  if(!confirm('Delete this organisation and all its data?'))return;
+  db.orgs=db.orgs.filter(o=>o.id!==activeOrgId);
+  activeOrgId=db.orgs[0]?.id||null;
+  saveDB();renderSidebar();renderMain();
+}
+
+// ── PERSON MODAL ───────────────────────────────────────────
+function renderModalTags(o){
+  const wrap=document.getElementById('modal-tag-chips');if(!wrap)return;
+  if(!(o.tags||[]).length){
+    wrap.innerHTML='<span style="font-size:12px;color:#aaa">No tags yet — add some on the Tags &amp; Roles tab</span>';return;
+  }
+  const roleTags=o.roleTags||[];
+  wrap.innerHTML=o.tags.map(t=>{
+    const active=modalSelectedTags.includes(t);
+    const isRole=roleTags.includes(t);
+    const te=t.replace(/'/g,"\\'");
+    return `<div class="modal-tag-chip${active?' active':''}${isRole?' role-tag':''}" onclick="toggleModalTag('${te}')" title="${isRole?'Role title tag':''}">${t}${isRole?'<span class="role-pip">role</span>':''}</div>`;
+  }).join('');
+}
+function toggleModalTag(t){
+  const i=modalSelectedTags.indexOf(t);
+  if(i>-1)modalSelectedTags.splice(i,1);else modalSelectedTags.push(t);
+  const o=org();if(o)renderModalTags(o);
+}
+function toggleRoleTag(t){
+  const o=org();if(!o)return;
+  if(!o.roleTags)o.roleTags=[];
+  if(!o.roleOrder)o.roleOrder=[];
+  const i=o.roleTags.indexOf(t);
+  if(i>-1){
+    o.roleTags.splice(i,1);
+    o.roleOrder=o.roleOrder.filter(x=>x!==t);
+  } else {
+    o.roleTags.push(t);
+    if(!o.roleOrder.includes(t))o.roleOrder.push(t);
+  }
+  saveDB();
+  if(activeTab==='tags')renderTags();
+  else renderModalTags(o);
+}
+function addModalTag(){
+  const inp=document.getElementById('new-tag-input');
+  const vals=inp.value.split(',').map(s=>s.trim()).filter(Boolean);
+  if(!vals.length)return;
+  const o=org();if(!o)return;
+  vals.forEach(val=>{
+    if(!o.tags.includes(val)){o.tags.push(val);saveDB();}
+    if(!modalSelectedTags.includes(val))modalSelectedTags.push(val);
+  });
+  inp.value='';
+  renderModalTags(o);
+}
+function openPersonModal(id){
+  editingPersonId=id||null;
+  const o=org();if(!o)return;
+  const p=id?o.people.find(x=>x.id===id):null;
+  document.getElementById('pm-title').textContent=p?'Edit person':'Add person';
+  ['name','notes'].forEach(f=>document.getElementById('f-'+f).value=p?p[f]||'':'');
+  document.getElementById('f-status').value=p?p.status||'available':'available';
+  document.getElementById('f-away').value=p?p.away||'':'';
+  modalSelectedTags=p?[...(p.tags||[])]:[];
+  renderModalTags(o);
+  document.getElementById('new-tag-input').value='';
+  toggleAwayDate();
+  document.getElementById('person-modal').classList.add('open');
+  setTimeout(()=>document.getElementById('f-name').focus(),50);
+}
+function closePersonModal(){document.getElementById('person-modal').classList.remove('open');}
+function savePerson(){
+  const name=document.getElementById('f-name').value.trim();if(!name)return;
+  const o=org();if(!o)return;
+  const tags=[...modalSelectedTags];
+  const p={
+    id:editingPersonId||uid(),name,
+    tags,
+    groups:editingPersonId?(o.people.find(x=>x.id===editingPersonId)?.groups||[]):[],
+    status:document.getElementById('f-status').value,
+    away:document.getElementById('f-away').value,
+    notes:document.getElementById('f-notes').value.trim(),
+  };
+  if(editingPersonId){const i=o.people.findIndex(x=>x.id===editingPersonId);if(i>-1)o.people[i]=p;}
+  else o.people.push(p);
+  saveDB();closePersonModal();renderContent();
+}
+function deletePerson(id){
+  const o=org();if(!o)return;
+  if(!confirm('Remove this person?'))return;
+  o.people=o.people.filter(x=>x.id!==id);
+  o.connections=o.connections.filter(c=>c.from!==id&&c.to!==id);
+  saveDB();renderContent();
+}
+
+// ── CONNECTIONS ────────────────────────────────────────────
+function openConnModal(id){
+  const o=org();if(!o)return;
+  const editing=id?o.connections.find(c=>c.id===id):null;
+  document.getElementById('cm-title').textContent=editing?'Edit connection':'Add connection';
+  const opts=o.people.map(p=>`<option value="${p.id}">${p.name}</option>`).join('');
+  document.getElementById('c-from').innerHTML=opts;
+  document.getElementById('c-to').innerHTML=opts;
+  document.getElementById('c-label').value=editing?editing.label:'';
+  if(editing){document.getElementById('c-from').value=editing.from;document.getElementById('c-to').value=editing.to;}
+  document.getElementById('conn-modal').classList.add('open');
+}
+function closeConnModal(){document.getElementById('conn-modal').classList.remove('open');}
+function saveConn(){
+  const o=org();if(!o)return;
+  const from=document.getElementById('c-from').value;
+  const to=document.getElementById('c-to').value;
+  const label=document.getElementById('c-label').value.trim();
+  if(!from||!to||!label||from===to)return;
+  o.connections.push({id:uid(),from,to,label});
+  saveDB();closeConnModal();renderContent();
+}
+function deleteConn(id){
+  const o=org();if(!o)return;
+  o.connections=o.connections.filter(c=>c.id!==id);
+  saveDB();
+  if(activeTab==='nodes')renderNodes();
+  else renderContent();
+}
+
+// ── CAMPAIGN ───────────────────────────────────────────────
+function openCampaignModal(isEdit){
+  editingCampaign=!!isEdit;
+  document.getElementById('cpam-title').textContent=isEdit?'Edit campaign':'New campaign';
+  document.getElementById('cp-save-btn').textContent=isEdit?'Save':'Create';
+  document.getElementById('cp-name').value=isEdit&&activeCampaign?activeCampaign.name:'';
+  document.getElementById('campaign-modal').classList.add('open');
+  setTimeout(()=>document.getElementById('cp-name').focus(),50);
+}
+function closeCampaignModal(){document.getElementById('campaign-modal').classList.remove('open');}
+function saveCampaign(){
+  const name=document.getElementById('cp-name').value.trim();if(!name)return;
+  const o=org();if(!o)return;
+  if(editingCampaign&&activeCampaign){
+    activeCampaign.name=name;
+    const ci=o.campaigns.findIndex(x=>x.id===activeCampaign.id);
+    if(ci>-1)o.campaigns[ci]=activeCampaign;
+  } else {
+    const c={id:uid(),name,created:Date.now(),contacted:[]};
+    o.campaigns.unshift(c);activeCampaign=c;
+  }
+  saveDB();closeCampaignModal();renderContent();
+}
+function deleteCampaign(){
+  const o=org();if(!o||!activeCampaign)return;
+  if(!confirm('Delete this campaign?'))return;
+  o.campaigns=o.campaigns.filter(c=>c.id!==activeCampaign.id);
+  activeCampaign=null;saveDB();renderContent();
+}
+function toggleContacted(pid){
+  if(!activeCampaign)return;
+  const c=activeCampaign.contacted||[];
+  const i=c.indexOf(pid);
+  if(i>-1)c.splice(i,1);else c.push(pid);
+  activeCampaign.contacted=c;
+  const o=org();if(!o)return;
+  const ci=o.campaigns.findIndex(x=>x.id===activeCampaign.id);
+  if(ci>-1)o.campaigns[ci]=activeCampaign;
+  saveDB();renderContent();
+}
+function clearContacts(){
+  if(!activeCampaign)return;
+  activeCampaign.contacted=[];
+  const o=org();if(!o)return;
+  const ci=o.campaigns.findIndex(x=>x.id===activeCampaign.id);
+  if(ci>-1)o.campaigns[ci]=activeCampaign;
+  saveDB();renderContent();
+}
+
+// ── MAIN RENDER ────────────────────────────────────────────
+function renderMain(){
+  const o=org();
+  document.getElementById('topbar').style.display=o?'':'none';
+  document.getElementById('tab-bar').style.display=o?'':'none';
+  if(!o){
+    document.getElementById('content-area').innerHTML=`<div class="empty-state">
+      <div class="empty-state-icon"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></div>
+      <h2>No organisations yet</h2>
+      <p>Create a new organisation to get started, or import an existing backup</p>
+      <div class="empty-state-actions">
+        <button class="esbtn primary" onclick="openOrgModal()">New organisation</button>
+        <button class="esbtn secondary" onclick="document.getElementById('import-input').click()">Import backup</button>
+      </div>
+    </div>`;
+    return;
+  }
+  document.getElementById('org-name-display').textContent=o.name;
+  ['dir','tree','nodes','tags'].forEach(t=>document.getElementById('tab-'+t).classList.toggle('active',activeTab===t));
+  renderContent();
+}
+function renderContent(){
+  if(activeTab==='dir')renderDir();
+  else if(activeTab==='tree')renderTree();
+  else if(activeTab==='nodes')renderNodes();
+  else if(activeTab==='tags')renderTags();
+
+}
+function setTab(t){
+  if(activeTab==='nodes'){
+    syncLayout();
+    if(_canvasResizeObserver){_canvasResizeObserver.disconnect();_canvasResizeObserver=null;}
+    if(_canvasWindowResizeFn){window.removeEventListener('resize',_canvasWindowResizeFn);_canvasWindowResizeFn=null;}
+  }
+  activeTab=t;
+  if(t==='nodes')loadLayout();
+  renderMain();
+}
+
+// ── DIRECTORY ──────────────────────────────────────────────
+function renderDir(){
+  const o=org();if(!o)return;
+  const q=(document.getElementById('dir-search')?.value||'').toLowerCase();
+  const allTags=[...new Set(o.people.flatMap(p=>p.tags||[]))].sort();
+  let html=`<div class="search-wrap"><span class="si">&#128269;</span><input type="text" id="dir-search" placeholder="Search..." oninput="renderDir()" value="${q}"></div>`;
+  html+=`<div class="filter-bar"><span class="fl">Tag</span>`+
+    ['all',...allTags].map(t=>`<button class="chip${dirFilter===t?' active':''}" onclick="setDF('${t.replace(/'/g,"\\'")}')">` +(t==='all'?'All':t)+`</button>`).join('')+`</div>`;
+  const filtered=o.people.filter(p=>{
+    const mq=!q||[p.name,(p.tags||[]).join(' '),p.notes].join(' ').toLowerCase().includes(q);
+    return mq&&(dirFilter==='all'||(p.tags||[]).includes(dirFilter));
+  });
+  if(!filtered.length){html+='<div class="empty">No results.</div>';}
+  else html+=filtered.map(p=>{
+    const[bg,fg]=avc(p.name);
+    const tpills=(p.tags||[]).map(t=>{const[tbg,tfg]=tagColor(t,o.tags);return`<span class="pill" style="background:${tbg};color:${tfg}">${t}</span>`;}).join('');
+    const awayBadge=p.status==='away'?`<div class="away-line">${p.away?'Away until '+new Date(p.away).toLocaleDateString('en-GB',{day:'numeric',month:'short'}):'Away'}</div>`:''
+    return`<div class="card">
+      <div class="card-top">
+        <div class="av" style="background:${bg};color:${fg}">${ini(p.name)}</div>
+        <div class="card-main">
+          <div class="cname">${p.name}${tpills}</div>
+          ${awayBadge}
+        </div>
+      </div>
+      ${p.notes?`<div class="cnotes">${p.notes}</div>`:''}
+      <div class="card-actions">
+        <button class="cbtn" onclick="openPersonModal('${p.id}')">Edit</button>
+        <button class="cbtn del" onclick="deletePerson('${p.id}')">Remove</button>
+      </div>
+    </div>`;
+  }).join('');
+  document.getElementById('content-area').innerHTML=html;
+}
+function setDF(f){dirFilter=f;renderDir();}
+
+// ── TREE ───────────────────────────────────────────────────
+function pchip(p){
+  const[bg,fg]=avc(p.name);const me=isMe(p);
+  const contacted=activeCampaign&&(activeCampaign.contacted||[]).includes(p.id);
+  const sel=!!activeCampaign;
+  const oc=sel?`onclick="toggleContacted('${p.id}')"`:'' ;
+  return`<div class="pchip${me?' isme':''}${contacted?' contacted':''}${sel?' pchip-sel':''}" ${oc}><div class="avsm" style="background:${bg};color:${fg}">${ini(p.name)}</div><span class="pcn">${p.name}</span> ${statusDot(p)}</div>`;
+}
+
+function renderTree(){
+  const o=org();if(!o)return;
+  const n=(activeCampaign?.contacted||[]).length;
+  let html=`<div class="tree-controls">
+    <button class="chip${treeView==='tag'?' active':''}" onclick="setTV('tag')">By tag</button>
+    <button class="chip${treeView==='role'?' active':''}" onclick="setTV('role')">By role</button>
+  </div>
+  <div class="campaign-banner${activeCampaign?' campaign-banner-active':''}">
+    <div class="cbanner-left">
+      <div class="cbanner-label">Outreach campaigns</div>
+      <div class="cbanner-desc">${activeCampaign
+        ? `<strong>${activeCampaign.name}</strong> — <span class="cbanner-count">${n} engaged</span>`
+        : 'Track who you&rsquo;ve engaged for a given initiative. Select a campaign or create a new one to start marking people.'
+      }</div>
+    </div>
+    <div class="cbanner-right">
+      <select class="cbanner-select" onchange="onCampaignChange(this.value)">
+        <option value="">— Select campaign —</option>
+        ${o.campaigns.map(c=>`<option value="${c.id}"${activeCampaign&&activeCampaign.id===c.id?' selected':''}>${c.name} (${new Date(c.created).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'2-digit'})})</option>`).join('')}
+      </select>
+      <button class="cbanner-btn" onclick="openCampaignModal()">+ New</button>
+      ${activeCampaign?`<button class="cbanner-btn" onclick="openCampaignModal(true)">Edit</button><button class="cbanner-btn cbanner-btn-clear" onclick="clearContacts()">Clear engaged</button><button class="cbanner-btn cbanner-btn-del" onclick="deleteCampaign()">Delete</button>`:''}
+    </div>
+  </div>`;
+  if(treeView==='tag'){
+    const tmap={};const none=[];
+    for(const p of o.people){
+      const ts=p.tags||[];
+      if(ts.length)ts.forEach(t=>(tmap[t]=tmap[t]||[]).push(p));
+      else none.push(p);
+    }
+    const tlist=[...o.tags.filter(t=>tmap[t]),...Object.keys(tmap).filter(t=>!o.tags.includes(t))];
+    if(none.length)tlist.push(null);
+    for(const t of tlist){
+      const ps=t?tmap[t]:none;
+      const bl={};for(const p of ps){const k=clf(p.role);(bl[k]=bl[k]||[]).push(p);}
+      const lk=Object.keys(bl).sort((a,b)=>lo(a)-lo(b));
+      const[tbg,tfg]=t?tagColor(t,o.tags):['#f5f4f0','#888'];
+      html+=`<div class="sector-block"><div class="sector-head" style="color:${tfg}">${t||'No tag'}</div>`;
+      for(let i=0;i<lk.length;i++){
+        const k=lk[i];const me=k==='managing_consultant';
+        if(i>0)html+=`<div class="vconn"></div>`;
+        html+=`<div class="level-row"><div class="level-lbl${me?' me':''}">${me?'▶ ':''}${ll(k)}</div><div class="people-row">${bl[k].map(pchip).join('')}</div></div>`;
+      }
+      html+=`</div>`;
+    }
+  } else if(treeView==='role'){
+    html+=renderRoleBands(o);
+  } else {
+    const bl={};for(const p of o.people){const k=clf(p.role);(bl[k]=bl[k]||[]).push(p);}
+    const lk=Object.keys(bl).sort((a,b)=>lo(a)-lo(b));
+    for(let i=0;i<lk.length;i++){
+      const k=lk[i];const me=k==='managing_consultant';
+      if(i>0)html+=`<div class="vconn"></div>`;
+      html+=`<div class="level-row"><div class="level-lbl${me?' me':''}">${me?'▶ ':''}${ll(k)}</div><div class="people-row">${bl[k].map(pchip).join('')}</div></div>`;
+    }
+  }
+  document.getElementById('content-area').innerHTML=html;
+  if(treeView==='role')initRoleDrag();
+}
+function setTV(v){treeView=v;renderTree();}
+
+// ── ROLE HIERARCHY VIEW ─────────────────────────────────────
+function renderRoleBands(o){
+  const roleTags=o.roleTags||[];
+  const roleOrder=o.roleOrder||[...roleTags];
+  if(!roleTags.length){
+    return `<div class="empty" style="padding:3rem 1rem;text-align:center">
+      <div style="font-weight:600;margin-bottom:6px">No role titles defined yet</div>
+      <div style="color:#888;font-size:13px">Go to Tags &amp; Roles and toggle Role on for any tag</div>
+    </div>`;
+  }
+  // build map: role → people who have that tag
+  const rmap={};
+  for(const t of roleOrder)rmap[t]=[];
+  const unroled=[];
+  for(const p of o.people){
+    const myRoles=(p.tags||[]).filter(t=>roleTags.includes(t));
+    if(myRoles.length) myRoles.forEach(t=>{if(rmap[t])rmap[t].push(p);});
+    else unroled.push(p);
+  }
+  let out=`<div id="role-view-panel" style="padding:0 0 24px">
+    <div style="font-size:12px;color:#aaa;margin:8px 0 14px;display:flex;align-items:center;gap:6px"><span>Drag bands to reorder seniority — most senior at top</span></div>
+    <div id="role-bands">`;
+  for(let i=0;i<roleOrder.length;i++){
+    const t=roleOrder[i];
+    const people=rmap[t]||[];
+    const[tbg,tfg]=tagColor(t,o.tags);
+    out+=`<div class="role-band" draggable="true" data-roletag="${t}" style="--role-color:${tbg};--role-fg:${tfg}">
+      <div class="role-band-header">
+        <span class="role-drag-handle" title="Drag to reorder">⠿</span>
+        <span class="role-badge" style="background:${tbg};color:${tfg}">${t}</span>
+        <span class="role-count">${people.length} ${people.length===1?'person':'people'}</span>
+        <span class="role-rank">#${i+1}</span>
+      </div>
+      <div class="role-band-people">
+        ${people.length?people.map(pchip).join(''):'<span style="color:#bbb;font-size:12px;font-style:italic">No one assigned this role tag yet</span>'}
+      </div>
+    </div>`;
+  }
+  if(unroled.length){
+    out+=`<div class="role-band role-band-unassigned" data-roletag="__none__">
+      <div class="role-band-header">
+        <span class="role-badge" style="background:#f0efe9;color:#888">No role</span>
+        <span class="role-count">${unroled.length} ${unroled.length===1?'person':'people'}</span>
+      </div>
+      <div class="role-band-people">${unroled.map(pchip).join('')}</div>
+    </div>`;
+  }
+  out+=`</div></div>`;
+  return out;
+}
+
+let _roleDragSrc=null;
+function initRoleDrag(){
+  const bands=document.querySelectorAll('.role-band[draggable="true"]');
+  bands.forEach(band=>{
+    band.addEventListener('dragstart',e=>{
+      _roleDragSrc=band;
+      band.classList.add('role-band-dragging');
+      e.dataTransfer.effectAllowed='move';
+    });
+    band.addEventListener('dragend',()=>{
+      band.classList.remove('role-band-dragging');
+      document.querySelectorAll('.role-band').forEach(b=>b.classList.remove('role-band-over'));
+    });
+    band.addEventListener('dragover',e=>{
+      e.preventDefault();
+      if(_roleDragSrc&&_roleDragSrc!==band){
+        document.querySelectorAll('.role-band').forEach(b=>b.classList.remove('role-band-over'));
+        band.classList.add('role-band-over');
+      }
+    });
+    band.addEventListener('drop',e=>{
+      e.preventDefault();
+      if(!_roleDragSrc||_roleDragSrc===band)return;
+      const o=org();if(!o)return;
+      const srcTag=_roleDragSrc.dataset.roletag;
+      const tgtTag=band.dataset.roletag;
+      const order=o.roleOrder||[...o.roleTags];
+      const si=order.indexOf(srcTag);const ti=order.indexOf(tgtTag);
+      if(si>-1&&ti>-1){
+        order.splice(si,1);order.splice(ti,0,srcTag);
+        o.roleOrder=order;saveDB();
+      }
+      _roleDragSrc=null;
+      renderTree();
+    });
+  });
+}
+function onCampaignChange(id){const o=org();if(!o)return;activeCampaign=o.campaigns.find(c=>c.id===id)||null;renderContent();}
+
+// ── NODE VIEW ──────────────────────────────────────────────
+let _canvasResizeObserver=null;
+let _canvasWindowResizeFn=null;
+function renderNodes(){
+  const o=org();if(!o)return;
+  const pool=poolPeople(o);
+
+  document.getElementById('content-area').innerHTML=`
+    <div class="nodes-layout">
+      <div class="node-controls">
+        <button class="tbtn primary" onclick="addGroupPrompt()">+ Group</button>
+        <button class="tbtn" onclick="fitCanvasView()">Fit</button>
+        <button class="tbtn" onclick="centreLayout()">Centre</button>
+        <div class="group-actions" id="group-actions" style="display:none">
+          <span id="sel-group-name"></span>
+          <button class="tbtn" onclick="renameSelectedGroup()">Rename</button>
+          <button class="tbtn" onclick="deleteSelectedGroup()" style="color:#c0392b;border-color:#e0a0a0">Delete</button>
+        </div>
+        <span style="font-size:11px;color:#aaa;margin-left:auto">${assignedPeople(o).length} assigned · ${pool.length} in pool · ${o.connections.length} connections</span>
+      </div>
+      <div class="canvas-wrap" id="canvas-wrap">
+        <button class="canvas-hint-reinvoke" id="hint-reinvoke" onclick="showCanvasHint()" title="Show tips" style="display:none">ⓘ</button>
+        <div class="canvas-hint-panel${localStorage.getItem('canvasHintDismissed')==='1'?' hidden':''}" id="canvas-hint-panel">
+          <span class="canvas-hint-icon">ⓘ</span>
+          <div class="canvas-hint-body">
+            <div style="font-weight:600;color:#1a56c4;margin-bottom:6px;font-size:12px">How this works</div>
+            <ul>
+              <li>Hover + click on a group to drag it on the canvas</li>
+              <li>Hover + click on an avatar to drag it on the canvas</li>
+              <li>Click + drag on the edge of a group to create a group connection</li>
+              <li>Single click on an avatar and then select a second avatar to create a person connection</li>
+              <li>Double click on a connection, group or avatar to edit the details</li>
+              <li>Drag avatars out of groups to unassign them</li>
+              <li>Scroll to move the canvas, control scroll to zoom</li>
+            </ul>
+          </div>
+          <button class="canvas-hint-dismiss" onclick="dismissCanvasHint()" title="Dismiss">×</button>
+        </div>
+        <canvas id="node-canvas" style="display:block;width:100%;touch-action:none;border-radius:10px;background:#fff;border:1px solid #e0dfd8;cursor:default"></canvas>
+      </div>
+      <div class="pool-dock" id="pool-dock">
+        <div class="pool-dock-head">
+          <span class="pool-dock-title">Unassigned pool</span>
+          <span class="pool-dock-count" id="pool-count">${pool.length} unassigned</span>
+        </div>
+        <div class="people-pool" id="pool-chips">${pool.length?pool.map(p=>{
+          const[bg,fg]=avc(p.name);
+          return`<div class="pool-chip" data-pid="${p.id}"><div class="avsm" style="background:${bg};color:${fg}">${ini(p.name)}</div>${p.name}</div>`;
+        }).join(''):'<span style="font-size:12px;color:#ccc;padding:4px 2px">Everyone assigned — drag people here from a group to unassign</span>'}</div>
+      </div>
+    </div>`;
+
+  // Tear down any previous observers/listeners
+  if(_canvasResizeObserver){_canvasResizeObserver.disconnect();_canvasResizeObserver=null;}
+  if(_canvasWindowResizeFn){window.removeEventListener('resize',_canvasWindowResizeFn);_canvasWindowResizeFn=null;}
+
+  function sizeAndInit(){
+    const wrap=document.getElementById('canvas-wrap');
+    const canvas=document.getElementById('node-canvas');
+    if(!wrap||!canvas)return;
+    const W=wrap.clientWidth||800;
+    // Height: fill from top of canvas-wrap to above the pool dock
+    const wrapTop=wrap.getBoundingClientRect().top;
+    const poolH=document.getElementById('pool-dock')?.offsetHeight||100;
+    const H=Math.max(300,window.innerHeight-wrapTop-poolH-24);
+    canvas.style.height=H+'px';
+    initCanvas(o,W,H);
+    initPoolDrag();
+    updateGroupActions();
+  }
+
+  requestAnimationFrame(()=>{
+    sizeAndInit();
+    // sync reinvoke button with dismissed state
+    const dismissed=localStorage.getItem('canvasHintDismissed')==='1';
+    const btn=document.getElementById('hint-reinvoke');
+    if(btn)btn.style.display=dismissed?'':'none';
+  });
+
+  // ResizeObserver covers horizontal resize (container width changes)
+  _canvasResizeObserver=new ResizeObserver(()=>{if(activeTab==='nodes')sizeAndInit();});
+  const wrap=document.getElementById('canvas-wrap');
+  if(wrap)_canvasResizeObserver.observe(wrap);
+
+  // window resize covers vertical resize (innerHeight changes)
+  _canvasWindowResizeFn=()=>{if(activeTab==='nodes')sizeAndInit();};
+  window.addEventListener('resize',_canvasWindowResizeFn);
+}
+
+function clientToCanvas(clientX,clientY){
+  const canvas=document.getElementById('node-canvas');
+  if(!canvas)return{x:0,y:0,inCanvas:false};
+  const rect=canvas.getBoundingClientRect();
+  const dpr=window.devicePixelRatio||1;
+  const cW=canvas.width/dpr, cH=canvas.height/dpr;
+  return{
+    x:(clientX-rect.left)*(cW/rect.width),
+    y:(clientY-rect.top)*(cH/rect.height),
+    inCanvas:clientX>=rect.left&&clientX<=rect.right&&clientY>=rect.top&&clientY<=rect.bottom
+  };
+}
+
+function initPoolDrag(){
+  // Use document-level events for reliable cross-element drag
+  document.querySelectorAll('.pool-chip[data-pid]').forEach(chip=>{
+    chip.onpointerdown=e=>{
+      if(e.button!==0&&e.pointerType==='mouse')return;
+      e.preventDefault();
+      poolDragPid=chip.dataset.pid;
+      chip.classList.add('dragging');
+      document.getElementById('pool-dock')?.classList.add('drop-target');
+      // Attach document move/up so drag works across elements
+      function poolClientToWorld(clientX,clientY){
+        const raw=clientToCanvas(clientX,clientY);
+        return{x:(raw.x-canvasOffset.x)/canvasScale,y:(raw.y-canvasOffset.y)/canvasScale,inCanvas:raw.inCanvas};
+      }
+      function onMove(ev){
+        window._poolDragX=ev.clientX;window._poolDragY=ev.clientY;
+        const cc=poolClientToWorld(ev.clientX,ev.clientY);
+        const o=org();if(!o)return;
+        hoverGroupId=cc.inCanvas?getGroupAt(cc.x,cc.y,o):null;
+        if(canvasDrawFn)canvasDrawFn();
+        document.getElementById('pool-dock')?.classList.toggle('drop-target',isOverPoolDock(ev.clientX,ev.clientY));
+      }
+      function onUp(ev){
+        document.removeEventListener('pointermove',onMove);
+        document.removeEventListener('pointerup',onUp);
+        chip.classList.remove('dragging');
+        document.getElementById('pool-dock')?.classList.remove('drop-target');
+        const savedPid=poolDragPid;
+        poolDragPid=null;hoverGroupId=null;
+        const cc=poolClientToWorld(ev.clientX,ev.clientY);
+        const o=org();if(!o){if(canvasDrawFn)canvasDrawFn();return;}
+        if(cc.inCanvas&&savedPid){
+          const gid=getGroupAt(cc.x,cc.y,o);
+          if(gid){assignToGroup(savedPid,gid);renderNodes();return;}
+        }
+        if(canvasDrawFn)canvasDrawFn();
+      }
+      document.addEventListener('pointermove',onMove);
+      document.addEventListener('pointerup',onUp);
+    };
+  });
+}
+
+function initCanvas(o,W,H){
+  const old=document.getElementById('node-canvas');
+  if(!old)return;
+  // Clone to strip all stacked event listeners from previous initCanvas calls
+  const canvas=old.cloneNode(false);
+  canvas.style.cssText='display:block;touch-action:none;border-radius:10px;background:#fff;border:1px solid #e0dfd8;cursor:default;width:'+W+'px;height:'+H+'px';
+  old.parentNode.replaceChild(canvas,old);
+
+  const dpr=window.devicePixelRatio||1;
+  canvas.width=W*dpr;canvas.height=H*dpr;
+  const ctx=canvas.getContext('2d');
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+
+  // Ensure every group has a center in layout (migrate from old nodePositions if needed)
+  o.groups.forEach((g,i)=>{
+    if(!o.layout.groups[g.id]){
+      const members=o.people.filter(p=>(p.groups||[]).includes(g.id));
+      const oldPos=members.map(p=>nodePositions[p.id]).filter(Boolean);
+      if(oldPos.length){
+        const cx=oldPos.reduce((s,p)=>s+p.x,0)/oldPos.length;
+        const cy=oldPos.reduce((s,p)=>s+p.y,0)/oldPos.length;
+        o.layout.groups[g.id]={x:cx,y:cy};
+      }else{
+        const angle=(i/Math.max(o.groups.length,1))*Math.PI*2-Math.PI/2;
+        const spread=Math.min(W,H)*0.28;
+        o.layout.groups[g.id]={x:W/2+spread*Math.cos(angle),y:H/2+spread*Math.sin(angle)};
+      }
+      saveDB();
+    }
+  });
+
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    ctx.fillStyle='#fafaf8';ctx.fillRect(0,0,W,H);
+    ctx.save();
+    ctx.translate(canvasOffset.x,canvasOffset.y);
+    ctx.scale(canvasScale,canvasScale);
+
+    // group circles
+    o.groups.forEach((g,gi)=>{
+      const c=getGroupCircle(g,o);if(!c)return;
+      const[gbg,gfg]=GROUP_COLORS[gi%GROUP_COLORS.length];
+      const isHover=hoverGroupId===g.id;
+      const isSel=selectedGroupId===g.id;
+      const isDragSource=canvasDrag?.type==='person'&&canvasDrag.fromGroup===g.id;
+      const isEscaping=isDragSource&&canvasDrag.isEscaping;
+      const members=o.people.filter(p=>(p.groups||[]).includes(g.id));
+      // fill
+      ctx.beginPath();ctx.arc(c.cx,c.cy,c.r,0,Math.PI*2);
+      ctx.fillStyle=isHover?gbg+'44':isEscaping?'rgba(245,158,11,0.06)':gbg+'22';
+      ctx.fill();
+      // stroke — orange dashed when person is escaping, normal otherwise
+      if(isEscaping){
+        ctx.strokeStyle='#f59e0b';ctx.lineWidth=2;ctx.setLineDash([7,5]);
+      }else{
+        ctx.strokeStyle=isSel?gfg:isHover?gfg+'dd':gfg+'77';
+        ctx.lineWidth=isSel?2.5:1.5;
+        ctx.setLineDash(members.length?[]:[5,5]);
+      }
+      ctx.stroke();ctx.setLineDash([]);
+      // label pill at top
+      const labelY=c.cy-c.r+18;
+      ctx.font='600 11px -apple-system,sans-serif';
+      const tw=ctx.measureText(g.name).width;
+      ctx.fillStyle='rgba(255,255,255,0.88)';
+      ctx.beginPath();ctx.roundRect(c.cx-tw/2-6,labelY-8,tw+12,17,8);ctx.fill();
+      ctx.fillStyle=isEscaping?'#b45309':gfg;ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(g.name,c.cx,labelY);
+      if(!members.length){
+        ctx.font='10px -apple-system,sans-serif';ctx.fillStyle=gfg+'99';
+        ctx.fillText('drop people here',c.cx,c.cy);
+      }
+      // "release to remove" hint when escaping
+      if(isEscaping){
+        ctx.font='500 10px -apple-system,sans-serif';ctx.fillStyle='#f59e0b';
+        ctx.fillText('drag out → remove from group',c.cx,c.cy);
+      }
+      // outer ring hint — stronger when in the link zone (outer 35%), subtle when in move zone
+      if(!canvasDrag&&hoverGroupId===g.id&&!hoverPersonId){
+        // We don't have mx/my here so we draw the hint ring always; cursor distinguishes zones
+        const inLinkZone=hoverGroupId===g.id; // always show the ring when group is hovered
+        ctx.beginPath();ctx.arc(c.cx,c.cy,c.r+7,0,Math.PI*2);
+        ctx.strokeStyle=gfg+'66';ctx.lineWidth=1.5;ctx.setLineDash([4,4]);ctx.stroke();ctx.setLineDash([]);
+        // small label hint at top of ring
+        ctx.font='500 9px -apple-system,sans-serif';ctx.fillStyle=gfg+'99';
+        ctx.textAlign='center';ctx.textBaseline='bottom';
+        ctx.fillText('drag edge to link',c.cx,c.cy-c.r-10);
+      }
+    });
+
+    // connections
+    // ── person connections ──
+    const AVATAR_R=20; // avatar radius — offset arrows to edge of circle
+    function drawPersonArrow(x,y,angle,col){
+      // place arrowhead at avatar edge, not centre
+      const ex=x-Math.cos(angle)*AVATAR_R, ey=y-Math.sin(angle)*AVATAR_R;
+      ctx.save();ctx.translate(ex,ey);ctx.rotate(angle);
+      ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(-11,5);ctx.lineTo(-11,-5);ctx.closePath();
+      ctx.fillStyle=col;ctx.fill();ctx.restore();
+    }
+    o.connections.forEach(c=>{
+      const pa=o.people.find(x=>x.id===c.from), pb=o.people.find(x=>x.id===c.to);
+      if(!pa||!pb)return;
+      const gida=(pa.groups||[])[0], gidb=(pb.groups||[])[0];
+      const a=gida?getMemberPos(c.from,gida,o):null;
+      const b=gidb?getMemberPos(c.to,gidb,o):null;
+      if(!a||!b)return;
+      const isHover=hoverConnId===c.id;
+      const col=isHover?'#1a56c4':'#7c8db5';
+      const arrowCol=isHover?'#1a56c4':'#4a5568';
+      // curved arc — control point chosen to curve away from group circles
+      const cp=connControlPoint(a,b,gida,gidb,o);
+      const cpx=cp.x, cpy=cp.y;
+      ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.quadraticCurveTo(cpx,cpy,b.x,b.y);
+      ctx.strokeStyle=col;ctx.lineWidth=isHover?2.5:1.5;ctx.stroke();
+      // arrow angle at endpoints (tangent of quadratic at t=1 and t=0)
+      const angFwd=Math.atan2(b.y-cpy,b.x-cpx);
+      const angBwd=Math.atan2(a.y-cpy,a.x-cpx);
+      const dir=c.dir||'fwd';
+      if(dir==='fwd'||dir==='both')drawPersonArrow(b.x,b.y,angFwd,arrowCol);
+      if(dir==='bwd'||dir==='both')drawPersonArrow(a.x,a.y,angBwd,arrowCol);
+      // label pill at the curve's midpoint (t=0.5 on quadratic)
+      const lx=0.25*a.x+0.5*cpx+0.25*b.x;
+      const ly=0.25*a.y+0.5*cpy+0.25*b.y;
+      if(c.label){
+        ctx.font='500 10px -apple-system,sans-serif';ctx.textAlign='center';
+        const tw=ctx.measureText(c.label).width+12;
+        ctx.fillStyle=isHover?'#e8f0fe':'rgba(255,255,255,0.95)';
+        ctx.beginPath();ctx.roundRect(lx-tw/2,ly-9,tw,16,4);ctx.fill();
+        ctx.fillStyle=isHover?'#1a56c4':'#666';
+        ctx.fillText(c.label,lx,ly-1);
+      }
+    });
+
+    // ── group links ──
+    function drawArrowHead(x,y,angle,col){
+      ctx.save();ctx.translate(x,y);ctx.rotate(angle);
+      ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(-11,5);ctx.lineTo(-11,-5);ctx.closePath();
+      ctx.fillStyle=col;ctx.fill();ctx.restore();
+    }
+    (o.groupLinks||[]).forEach(gl=>{
+      const g=groupLinkGeom(gl,o);if(!g)return;
+      const isHov=hoverGroupLinkId===gl.id;
+      const col=isHov?'#1a56c4':'#555';
+      ctx.beginPath();ctx.moveTo(g.sx,g.sy);ctx.lineTo(g.ex,g.ey);
+      ctx.strokeStyle=col;ctx.lineWidth=isHov?2.5:2;ctx.stroke();
+      // arrowheads by direction
+      if(gl.dir!=='bwd')drawArrowHead(g.ex,g.ey,g.angle,col);
+      if(gl.dir==='bwd'||gl.dir==='both')drawArrowHead(g.sx,g.sy,g.angle+Math.PI,col);
+      // label pill at midpoint (only if label exists)
+      if(gl.label){
+        ctx.font='500 11px -apple-system,sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+        const lw=ctx.measureText(gl.label).width;
+        ctx.fillStyle=isHov?'#e8f0fe':'#fff';
+        ctx.beginPath();ctx.roundRect(g.mx-lw/2-7,g.my-9,lw+14,18,9);ctx.fill();
+        ctx.strokeStyle=isHov?'#aac4f5':'#ccc';ctx.lineWidth=1;ctx.stroke();
+        ctx.fillStyle=isHov?'#1a56c4':'#444';
+        ctx.fillText(gl.label,g.mx,g.my);
+      }
+    });
+    // group link creation preview
+    if(canvasDrag&&canvasDrag.type==='groupLink'){
+      const fromG=o.groups.find(x=>x.id===canvasDrag.fromGid);
+      const fc=fromG?getGroupCircle(fromG,o):null;
+      if(fc){
+        const tx=canvasDrag.ghostX??canvasDrag.startX, ty=canvasDrag.ghostY??canvasDrag.startY;
+        const dx=tx-fc.cx, dy=ty-fc.cy, dist=Math.hypot(dx,dy);
+        const sx=fc.cx+(dx/dist)*fc.r, sy=fc.cy+(dy/dist)*fc.r;
+        ctx.beginPath();ctx.moveTo(sx,sy);ctx.lineTo(tx,ty);
+        ctx.strokeStyle='#1a56c4';ctx.lineWidth=2;ctx.setLineDash([6,4]);ctx.stroke();ctx.setLineDash([]);
+        // arrowhead preview
+        drawArrowHead(tx,ty,Math.atan2(ty-sy,tx-sx),'#1a56c4');
+      }
+    }
+
+    // link-creation preview line
+    if(canvasDrag&&canvasDrag.type==='person'&&canvasDrag.linkTarget){
+      const gx=canvasDrag.ghostX??canvasDrag.startX, gy=canvasDrag.ghostY??canvasDrag.startY;
+      const tp=o.people.find(x=>x.id===canvasDrag.linkTarget);
+      const tgid=tp?(tp.groups||[])[0]:null;
+      const to=tgid?getMemberPos(canvasDrag.linkTarget,tgid,o):null;
+      if(to){
+        ctx.beginPath();ctx.moveTo(gx,gy);ctx.lineTo(to.x,to.y);
+        ctx.strokeStyle='#1a56c4';ctx.lineWidth=2;ctx.setLineDash([5,4]);ctx.stroke();ctx.setLineDash([]);
+      }
+    }
+
+    // pool drag ghost on canvas
+    if(poolDragPid&&window._poolDragX){
+      // clientToCanvas gives raw canvas pixels; apply inverse pan/zoom to get world coords
+      const _cc=clientToCanvas(window._poolDragX,window._poolDragY);
+      const cc={x:(_cc.x-canvasOffset.x)/canvasScale,y:(_cc.y-canvasOffset.y)/canvasScale,inCanvas:_cc.inCanvas};
+      if(cc.inCanvas){
+        const p=o.people.find(x=>x.id===poolDragPid);
+        if(p){
+          const[bg,fg]=avc(p.name);
+          ctx.globalAlpha=0.75;
+          ctx.beginPath();ctx.arc(cc.x,cc.y,22,0,Math.PI*2);
+          ctx.fillStyle=bg;ctx.fill();ctx.strokeStyle=fg;ctx.lineWidth=1.5;ctx.stroke();
+          ctx.globalAlpha=1;
+        }
+      }
+    }
+
+    // dragged person ghost
+    if(canvasDrag&&canvasDrag.type==='person'&&canvasDrag.moved){
+      drawNode(canvasDrag.pid,canvasDrag.ghostX??canvasDrag.startX,canvasDrag.ghostY??canvasDrag.startY,true);
+    }
+
+    // static member nodes (computed positions)
+    assignedPeople(o).forEach(p=>{
+      if(canvasDrag&&canvasDrag.type==='person'&&canvasDrag.pid===p.id&&canvasDrag.moved)return;
+      const gid=(p.groups||[])[0];if(!gid)return;
+      const pos=getMemberPos(p.id,gid,o);if(!pos)return;
+      drawNode(p.id,pos.x,pos.y,false);
+    });
+    ctx.restore();
+
+    // ── screen-space overlays (not affected by pan/zoom) ──
+    if(selectedPersonId){
+      const selP=o.people.find(x=>x.id===selectedPersonId);
+      if(selP){
+        const msg=`${selP.name} selected — click another person to connect, or Esc to cancel`;
+        ctx.save();
+        ctx.font='500 12px -apple-system,sans-serif';
+        const tw=ctx.measureText(msg).width;
+        const bw=tw+24,bh=30,bx=(W-bw)/2,by=12;
+        ctx.fillStyle='#1a56c4';
+        ctx.beginPath();ctx.roundRect(bx,by,bw,bh,8);ctx.fill();
+        ctx.fillStyle='#fff';ctx.textAlign='center';ctx.textBaseline='middle';
+        ctx.fillText(msg,W/2,by+bh/2);
+        ctx.restore();
+      }
+    }
+  }
+
+  canvasDrawFn=draw;
+
+  // ── zoom & pan via wheel ──
+  canvas.addEventListener('wheel',e=>{
+    e.preventDefault();
+    const s=screenXY(e);
+    if(e.ctrlKey||e.metaKey){
+      // pinch-zoom or Ctrl+scroll
+      const factor=e.deltaY<0?1.1:1/1.1;
+      const ns=Math.max(0.15,Math.min(5,canvasScale*factor));
+      canvasOffset.x=s.x-(s.x-canvasOffset.x)*(ns/canvasScale);
+      canvasOffset.y=s.y-(s.y-canvasOffset.y)*(ns/canvasScale);
+      canvasScale=ns;
+    }else{
+      // trackpad two-finger scroll = pan
+      canvasOffset.x-=e.deltaX;
+      canvasOffset.y-=e.deltaY;
+    }
+    draw();
+  },{passive:false});
+
+  // ESC cancels person selection
+  document.addEventListener('keydown',e=>{
+    if(e.key==='Escape'&&selectedPersonId){
+      selectedPersonId=null;draw();
+    }
+  });
+
+  function drawNode(pid,x,y,ghost){
+    const p=o.people.find(pp=>pp.id===pid);if(!p)return;
+    const[bg,fg]=avc(p.name);
+    const r=20;
+    ctx.globalAlpha=ghost?0.5:1;
+    const isSel=!ghost&&selectedPersonId===pid;
+    const isHov=!ghost&&hoverPersonId===pid;
+    // selection ring — pulsing blue halo
+    if(isSel){
+      ctx.beginPath();ctx.arc(x,y,r+11,0,Math.PI*2);
+      ctx.strokeStyle='#1a56c4';ctx.lineWidth=2.5;
+      ctx.setLineDash([5,4]);ctx.stroke();ctx.setLineDash([]);
+    }
+    // hover glow
+    if(isHov&&!isSel){
+      ctx.beginPath();ctx.arc(x,y,r+8,0,Math.PI*2);
+      ctx.fillStyle='rgba(0,0,0,0.08)';ctx.fill();
+    }
+    // tag ring (thin, only if tagged)
+    if(p.tags&&p.tags.length){
+      const[,tfg]=tagColor(p.tags[0],o.tags);
+      ctx.beginPath();ctx.arc(x,y,r+3,0,Math.PI*2);
+      ctx.strokeStyle=isSel?'#1a56c4':tfg;ctx.lineWidth=2;ctx.stroke();
+    }
+    // circle
+    ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);
+    ctx.fillStyle=bg;ctx.fill();
+    ctx.strokeStyle=isSel?'#1a56c4':isHov?fg:fg+'cc';ctx.lineWidth=isSel?2.5:isHov?2:1.5;ctx.stroke();
+    // initials
+    ctx.font='500 11px -apple-system,sans-serif';ctx.fillStyle=fg;ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText(ini(p.name),x,y);
+    // name label — white bg pill so it never bleeds into group text
+    ctx.font='12px -apple-system,sans-serif';
+    const nw=ctx.measureText(p.name).width;
+    const isHoveredNode=!ghost&&hoverPersonId===pid;
+    ctx.fillStyle=isHoveredNode?'rgba(255,255,255,0.97)':'rgba(255,255,255,0.85)';
+    ctx.fillRect(x-nw/2-4,y+r+3,nw+8,15);
+    ctx.fillStyle=isHoveredNode?'#111':'#333';ctx.textBaseline='top';
+    ctx.fillText(p.name,x,y+r+5);
+    ctx.globalAlpha=1;
+  }
+
+  draw();
+
+  function screenXY(e){
+    const rect=canvas.getBoundingClientRect();
+    return{x:(e.clientX-rect.left)*(W/rect.width),y:(e.clientY-rect.top)*(H/rect.height)};
+  }
+  function canvasXY(e){
+    const s=screenXY(e);
+    return{x:(s.x-canvasOffset.x)/canvasScale,y:(s.y-canvasOffset.y)/canvasScale};
+  }
+
+  function onPointerDown(e){
+    canvas.setPointerCapture(e.pointerId);
+    const{x:mx,y:my}=canvasXY(e);
+    // single click on group link or person connection → no action (double-click to edit)
+    // click person node
+    const person=getPersonAt(mx,my,o);
+    if(person){
+      hoverPersonId=null;
+      canvasDrag={type:'person',pid:person.id,mx,my,moved:false,startX:mx,startY:my,ghostX:mx,ghostY:my,fromGroup:(person.groups||[])[0]||null};
+      return;
+    }
+    // click inside a group — outer ring (>65% r) = start group link, inner = move group
+    const gid=getGroupAt(mx,my,o);
+    if(gid){
+      selectedGroupId=gid;updateGroupActions();
+      const c0=getGroupCircle(o.groups.find(x=>x.id===gid),o);
+      const distFromCenter=c0?Math.hypot(mx-c0.cx,my-c0.cy):0;
+      if(c0&&distFromCenter>c0.r*0.65){
+        // outer ring → group link drag
+        canvasDrag={type:'groupLink',fromGid:gid,mx,my,moved:false,startX:mx,startY:my,ghostX:mx,ghostY:my};
+      }else{
+        // inner zone → move group
+        canvasDrag={type:'group',gid,mx,my,moved:false,startX:mx,startY:my,groupStart:c0?{cx:c0.cx,cy:c0.cy}:null};
+      }
+      return;
+    }
+    selectedGroupId=null;selectedPersonId=null;updateGroupActions();
+    // fallthrough → pan
+    const s=screenXY(e);
+    canvasDrag={type:'pan',startSX:s.x,startSY:s.y,startOX:canvasOffset.x,startOY:canvasOffset.y};
+  }
+
+  function onPointerMove(e){
+    window._poolDragX=e.clientX;window._poolDragY=e.clientY;
+    const{x:mx,y:my}=canvasXY(e);
+    hoverConnId=getConnAt(mx,my,o)?.id||null;
+    hoverGroupLinkId=getGroupLinkAt(mx,my,o)?.id||null;
+    if(!canvasDrag&&!poolDragPid){
+      const hp=getPersonAt(mx,my,o);
+      hoverPersonId=hp?.id||null;
+      const hovGid=hoverPersonId?null:getGroupAt(mx,my,o);
+      hoverGroupId=hovGid;
+      // cursor: distinguish link zone (outer ring) from move zone (inner)
+      let cur='default';
+      if(hoverGroupLinkId)cur='pointer';
+      else if(hoverConnId)cur='pointer';
+      else if(hoverPersonId)cur=selectedPersonId&&hoverPersonId!==selectedPersonId?'crosshair':'grab';
+      else if(hovGid){
+        const hc=getGroupCircle(o.groups.find(x=>x.id===hovGid),o);
+        cur=hc&&Math.hypot(mx-hc.cx,my-hc.cy)>hc.r*0.65?'crosshair':'grab';
+      }
+      canvas.style.cursor=cur;
+      draw();return;
+    }
+    if(!canvasDrag){draw();return;}
+    if(canvasDrag.type==='pan'){
+      const s=screenXY(e);
+      canvasOffset.x=canvasDrag.startOX+(s.x-canvasDrag.startSX);
+      canvasOffset.y=canvasDrag.startOY+(s.y-canvasDrag.startSY);
+      canvas.style.cursor='grabbing';
+      draw();return;
+    }
+    canvasDrag.mx=mx;canvasDrag.my=my;
+    const dist=Math.hypot(mx-canvasDrag.startX,my-canvasDrag.startY);
+    if(dist>6)canvasDrag.moved=true;
+
+    if(canvasDrag.type==='group'&&canvasDrag.moved){
+      // Move the group center — members reposition automatically via getMemberPos
+      if(canvasDrag.groupStart){
+        const dx=mx-canvasDrag.startX,dy=my-canvasDrag.startY;
+        if(!o.layout.groups[canvasDrag.gid])o.layout.groups[canvasDrag.gid]={};
+        o.layout.groups[canvasDrag.gid].x=canvasDrag.groupStart.cx+dx;
+        o.layout.groups[canvasDrag.gid].y=canvasDrag.groupStart.cy+dy;
+      }
+      hoverGroupId=canvasDrag.gid;
+      canvas.style.cursor='grabbing';
+    }else if(canvasDrag.type==='groupLink'){
+      canvasDrag.ghostX=mx;canvasDrag.ghostY=my;
+      if(Math.hypot(mx-canvasDrag.startX,my-canvasDrag.startY)>6)canvasDrag.moved=true;
+      hoverGroupId=getGroupAt(mx,my,o);
+      canvas.style.cursor='crosshair';
+    }else if(canvasDrag.type==='person'&&canvasDrag.moved){
+      canvasDrag.ghostX=mx;canvasDrag.ghostY=my;
+      // Detect if ghost has escaped own group's circle
+      const fromG=canvasDrag.fromGroup?o.groups.find(x=>x.id===canvasDrag.fromGroup):null;
+      const ownC=fromG?getGroupCircle(fromG,o):null;
+      canvasDrag.isEscaping=ownC?Math.hypot(mx-ownC.cx,my-ownC.cy)>ownC.r:false;
+      const target=!canvasDrag.isEscaping?getPersonAt(mx,my,o):null;
+      canvasDrag.linkTarget=(target&&target.id!==canvasDrag.pid)?target.id:null;
+      hoverGroupId=getGroupAt(mx,my,o);
+      document.getElementById('pool-dock')?.classList.toggle('drop-target',canvasDrag.isEscaping||isOverPoolDock(e.clientX,e.clientY));
+      canvas.style.cursor=canvasDrag.linkTarget?'crosshair':canvasDrag.isEscaping?'copy':'grabbing';
+    }
+    draw();
+  }
+
+  function onPointerUp(e){
+    if(!canvasDrag){draw();return;}
+    const{x:mx,y:my}=canvasXY(e);
+
+    if(canvasDrag.type==='pan'){
+      canvasDrag=null;canvas.style.cursor='default';draw();return;
+    }
+    if(canvasDrag.type==='groupLink'&&canvasDrag.moved){
+      const gx=canvasDrag.ghostX??mx, gy=canvasDrag.ghostY??my;
+      const toGid=getGroupAt(gx,gy,o);
+      if(toGid&&toGid!==canvasDrag.fromGid){
+        const fid=canvasDrag.fromGid, tid=toGid;
+        const dup=(o.groupLinks||[]).some(gl=>(gl.from===fid&&gl.to===tid)||(gl.from===tid&&gl.to===fid));
+        if(!dup){
+          const fromName=o.groups.find(x=>x.id===fid)?.name||'A';
+          const toName=o.groups.find(x=>x.id===tid)?.name||'B';
+          showGroupLinkDialog({
+            x:e.clientX-140, y:e.clientY+12,
+            fromName, toName, label:'', dir:'fwd',
+            onSave(lbl,dir){
+              if(!o.groupLinks)o.groupLinks=[];
+              o.groupLinks.push({id:uid(),from:fid,to:tid,label:lbl,dir});
+              saveDB();if(canvasDrawFn)canvasDrawFn();
+            }
+          });
+        }
+      }
+      canvasDrag=null;hoverGroupId=null;canvas.style.cursor='default';draw();return;
+    }else if(canvasDrag.type==='group'&&canvasDrag.moved){
+      syncLayout();
+    }else if(canvasDrag.type==='person'){
+      if(!canvasDrag.moved){
+        // ── CLICK (no drag): select / connect ──────────────────
+        const pid=canvasDrag.pid;
+        if(!selectedPersonId){
+          selectedPersonId=pid;
+        }else if(selectedPersonId===pid){
+          selectedPersonId=null;
+        }else{
+          // Connect selectedPersonId → pid
+          const fromP=o.people.find(x=>x.id===selectedPersonId);
+          const toP=o.people.find(x=>x.id===pid);
+          const dup=o.connections.some(c=>(c.from===selectedPersonId&&c.to===pid)||(c.from===pid&&c.to===selectedPersonId));
+          if(!dup&&fromP&&toP){
+            const capturedFrom=selectedPersonId,capturedTo=pid;
+            showGroupLinkDialog({
+              x:e.clientX-140,y:e.clientY+12,
+              fromName:fromP.name,toName:toP.name,label:'',dir:'fwd',
+            onSave(lbl,dir){
+              if(!o.connections)o.connections=[];
+              o.connections.push({id:uid(),from:capturedFrom,to:capturedTo,label:lbl,dir:dir||'fwd'});
+              saveDB();if(canvasDrawFn)canvasDrawFn();
+            }
+            });
+          }
+          selectedPersonId=null;
+        }
+      }else{
+        // ── DRAG: move / reassign / unassign ───────────────────
+        selectedPersonId=null;
+        const unassign=()=>{
+          removeFromAllGroups(canvasDrag.pid);
+          canvasDrag=null;
+          document.getElementById('pool-dock')?.classList.remove('drop-target');
+          renderNodes();
+        };
+        const gx=canvasDrag.ghostX??mx, gy=canvasDrag.ghostY??my;
+        const fromG=canvasDrag.fromGroup?o.groups.find(x=>x.id===canvasDrag.fromGroup):null;
+        const ownC=fromG?getGroupCircle(fromG,o):null;
+        const escaped=!ownC||Math.hypot(gx-ownC.cx,gy-ownC.cy)>ownC.r;
+        if(isOverPoolDock(e.clientX,e.clientY)||escaped){
+          const dropGid=getGroupAt(gx,gy,o);
+          if(dropGid&&dropGid!==canvasDrag.fromGroup){assignToGroup(canvasDrag.pid,dropGid);}
+          else{unassign();return;}
+        }else{
+          syncLayout();
+        }
+      }
+    }
+    canvasDrag=null;
+    hoverGroupId=null;hoverPersonId=null;hoverGroupLinkId=null;
+    document.getElementById('pool-dock')?.classList.remove('drop-target');
+    canvas.style.cursor='default';
+    draw();
+    refreshPoolDock();
+  }
+
+  function onDblClick(e){
+    const{x:mx,y:my}=canvasXY(e);
+    // person
+    const person=getPersonAt(mx,my,o);
+    if(person){openPersonModal(person.id);return;}
+    // connection
+    const conn=getConnAt(mx,my,o);
+    if(conn){
+      const fromP=o.people.find(x=>x.id===conn.from);
+      const toP=o.people.find(x=>x.id===conn.to);
+      showGroupLinkDialog({
+        x:e.clientX-140,y:e.clientY+12,
+        fromName:fromP?.name||'A',toName:toP?.name||'B',
+        label:conn.label||'',dir:conn.dir||'fwd',editId:conn.id,
+        onSave(lbl,dir){conn.label=lbl;conn.dir=dir;saveDB();if(canvasDrawFn)canvasDrawFn();},
+        onDelete(){deleteConn(conn.id);if(canvasDrawFn)canvasDrawFn();}
+      });
+      return;
+    }
+    // group link
+    const gl=getGroupLinkAt(mx,my,o);
+    if(gl){
+      const fromName=o.groups.find(x=>x.id===gl.from)?.name||'A';
+      const toName=o.groups.find(x=>x.id===gl.to)?.name||'B';
+      showGroupLinkDialog({
+        x:e.clientX-140,y:e.clientY+12,
+        fromName,toName,label:gl.label,dir:gl.dir||'fwd',editId:gl.id,
+        onSave(lbl,dir){gl.label=lbl;gl.dir=dir;saveDB();if(canvasDrawFn)canvasDrawFn();},
+        onDelete(){deleteGroupLink(gl.id);if(canvasDrawFn)canvasDrawFn();}
+      });
+      return;
+    }
+    // group
+    const gid=getGroupAt(mx,my,o);
+    if(gid)renameGroupPrompt(gid);
+  }
+
+  canvas.onpointerdown=onPointerDown;
+  canvas.onpointermove=onPointerMove;
+  canvas.onpointerup=onPointerUp;
+  canvas.onpointercancel=()=>{canvasDrag=null;hoverGroupId=null;draw();};
+  canvas.ondblclick=onDblClick;
+}
+
+function openStorageModal(){document.getElementById('storage-modal').style.display='flex';}
+function closeStorageModal(){document.getElementById('storage-modal').style.display='none';}
+function dismissCanvasHint(){
+  localStorage.setItem('canvasHintDismissed','1');
+  document.getElementById('canvas-hint-panel')?.classList.add('hidden');
+  const btn=document.getElementById('hint-reinvoke');if(btn)btn.style.display='';
+}
+function showCanvasHint(){
+  localStorage.removeItem('canvasHintDismissed');
+  document.getElementById('canvas-hint-panel')?.classList.remove('hidden');
+  const btn=document.getElementById('hint-reinvoke');if(btn)btn.style.display='none';
+}
+function centreLayout(){
+  const o=org();if(!o)return;
+  const canvas=document.getElementById('node-canvas');if(!canvas)return;
+  const dpr=window.devicePixelRatio||1;
+  const CW=canvas.width/dpr, CH=canvas.height/dpr;
+
+  // 1. Compute bounding box of all groups in world space
+  let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
+  o.groups.forEach(g=>{
+    const c=getGroupCircle(g,o);if(!c)return;
+    minX=Math.min(minX,c.cx-c.r);minY=Math.min(minY,c.cy-c.r);
+    maxX=Math.max(maxX,c.cx+c.r);maxY=Math.max(maxY,c.cy+c.r);
+  });
+  if(minX===Infinity){canvasOffset={x:0,y:0};canvasScale=1;if(canvasDrawFn)canvasDrawFn();return;}
+
+  // 2. Shift all group positions so their cluster centre lands at the canvas centre
+  const clusterCx=(minX+maxX)/2, clusterCy=(minY+maxY)/2;
+  const targetCx=CW/2, targetCy=CH/2;
+  const dx=targetCx-clusterCx, dy=targetCy-clusterCy;
+  if(!o.layout)o.layout={groups:{}};
+  o.groups.forEach(g=>{
+    if(!o.layout.groups[g.id])o.layout.groups[g.id]={x:targetCx,y:targetCy};
+    o.layout.groups[g.id].x+=dx;
+    o.layout.groups[g.id].y+=dy;
+  });
+
+  // 3. Reset pan/zoom so canvas is at 1:1 with no offset
+  canvasOffset={x:0,y:0};canvasScale=1;
+  saveDB();
+  if(canvasDrawFn)canvasDrawFn();
+}
+
+function fitCanvasView(){
+  const o=org();if(!o)return;
+  const canvas=document.getElementById('node-canvas');if(!canvas)return;
+  const dpr=window.devicePixelRatio||1;
+  const CW=canvas.width/dpr, CH=canvas.height/dpr;
+  let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
+  o.groups.forEach(g=>{
+    const c=getGroupCircle(g,o);if(!c)return;
+    minX=Math.min(minX,c.cx-c.r);minY=Math.min(minY,c.cy-c.r);
+    maxX=Math.max(maxX,c.cx+c.r);maxY=Math.max(maxY,c.cy+c.r);
+  });
+  if(minX===Infinity){canvasOffset={x:0,y:0};canvasScale=1;}
+  else{
+    const pad=60,bw=maxX-minX+pad*2,bh=maxY-minY+pad*2;
+    canvasScale=Math.min(CW/bw,CH/bh,1.5);
+    canvasOffset={x:(CW-bw*canvasScale)/2-minX*canvasScale+pad*canvasScale,
+                  y:(CH-bh*canvasScale)/2-minY*canvasScale+pad*canvasScale};
+  }
+  if(canvasDrawFn)canvasDrawFn();
+}
+
+// ── GROUPS ─────────────────────────────────────────────────
+function addGroupPrompt(){
+  const name=prompt('New group name:');
+  if(!name||!name.trim())return;
+  const o=org();if(!o)return;
+  if(!o.layout)o.layout={nodes:{},groups:{}};
+  const g={id:uid(),name:name.trim()};
+  o.groups.push(g);
+  const W=Math.min(1100,window.innerWidth-260);
+  const H=Math.max(480,window.innerHeight-200);
+  const i=o.groups.length;
+  const angle=(i/Math.max(o.groups.length,1))*Math.PI*2;
+  const r=Math.min(W,H)*0.22;
+  o.layout.groups[g.id]={x:W/2+r*Math.cos(angle),y:H/2+r*Math.sin(angle)};
+  selectedGroupId=g.id;
+  saveDB();renderNodes();
+}
+
+function deleteGroup(gid){
+  const o=org();if(!o)return;
+  o.groups=o.groups.filter(g=>g.id!==gid);
+  o.people.forEach(p=>{
+    if(p.groups)p.groups=p.groups.filter(id=>id!==gid);
+  });
+  if(o.layout?.groups)delete o.layout.groups[gid];
+  if(selectedGroupId===gid)selectedGroupId=null;
+  saveDB();renderNodes();
+}
+
+function renameGroupPrompt(gid){
+  const o=org();if(!o)return;
+  const g=o.groups.find(x=>x.id===gid);if(!g)return;
+  const name=prompt('Rename group:',g.name);
+  if(name&&name.trim()){g.name=name.trim();saveDB();renderNodes();updateGroupActions();}
+}
+
+function addToGroup(pid,gid){
+  const o=org();if(!o)return;
+  const p=o.people.find(x=>x.id===pid);if(!p)return;
+  if(!p.groups)p.groups=[];
+  if(!p.groups.includes(gid))p.groups.push(gid);
+  saveDB();
+  if(activeTab==='nodes')renderNodes();
+}
+
+// ── TAGS ───────────────────────────────────────────────────
+function renderTags(){
+  const o=org();if(!o)return;
+  const roleTags=o.roleTags||[];
+  const roleOrder=o.roleOrder||[...roleTags];
+
+  // Tag table rows
+  const rows=o.tags.length?o.tags.map((t,i)=>{
+    const isRole=roleTags.includes(t);
+    const[tbg,tfg]=tagColor(t,o.tags);
+    return `<div class="trm-row" id="trm-row-${i}">
+      <span class="trm-swatch" style="background:${tbg};color:${tfg}">${ini(t)}</span>
+      <input class="trm-name" type="text" value="${t.replace(/"/g,'&quot;')}" onchange="renameTag(${i},this.value)" onblur="renameTag(${i},this.value)">
+      <div class="trm-toggle" title="${isRole?'Remove role designation':'Designate as a role'}" onclick="toggleRoleTag('${t.replace(/'/g,"\\'")}')">
+        <span class="trm-toggle-track${isRole?' on':''}"><span class="trm-toggle-thumb"></span></span>
+        <span class="trm-toggle-lbl${isRole?' on':''}">${isRole?'Role':'—'}</span>
+      </div>
+      <button class="trm-del" onclick="removeTag(${i})" title="Remove tag">✕</button>
+    </div>`;
+  }).join(''):`<div style="color:#bbb;font-size:13px;padding:12px 0">No tags yet.</div>`;
+
+  // Role priority panel — always rendered
+  const ordered=roleOrder.filter(t=>roleTags.includes(t));
+  const priorityInner=ordered.length
+    ? ordered.map((t,i)=>{
+        const[tbg,tfg]=tagColor(t,o.tags);
+        return `<div class="trm-priority-row" draggable="true" data-roletag="${t}">
+          <span class="role-drag-handle">⠿</span>
+          <span class="trm-rank">${i+1}</span>
+          <span class="trm-badge" style="background:${tbg};color:${tfg}">${t}</span>
+        </div>`;
+      }).join('')
+    : `<div class="trm-priority-empty">
+        <div style="font-weight:500;color:#bbb;font-size:13px">No role titles yet</div>
+        <div style="color:#ccc;font-size:12px;margin-top:4px">Toggle the Role switch on any tag to add it here, then drag to set seniority order.</div>
+      </div>`;
+
+  document.getElementById('content-area').innerHTML=`
+    <div class="trm-layout">
+      <div class="trm-col">
+        <div class="trm-section">
+          <div class="trm-section-head">All tags</div>
+          <p class="trm-desc">Edit tag names inline. Toggle <strong>Role</strong> to associate a tag as a role title — role titles can be ordered by hierarchy in the panel on the right.</p>
+          <div class="trm-col-headers">
+            <span class="trm-col-tag">Tag name</span>
+            <span class="trm-col-role">Role title?</span>
+          </div>
+          <div id="trm-tag-list">${rows}</div>
+          <div class="add-tag-row" style="margin-top:10px">
+            <input type="text" id="new-tag-input" placeholder="Add tag… comma-separate for multiple" onkeydown="if(event.key==='Enter')addTag()">
+            <button onclick="addTag()">+ Add</button>
+          </div>
+        </div>
+      </div>
+      <div class="trm-col">
+        <div class="trm-section trm-section-priority">
+          <div class="trm-section-head">Role hierarchy</div>
+          <p class="trm-desc">Drag to set seniority order — most senior at top.</p>
+          <div id="role-priority-list">${priorityInner}</div>
+        </div>
+      </div>
+    </div>`;
+  initRolePriorityDrag();
+}
+function addTag(){
+  const inp=document.getElementById('new-tag-input');
+  const vals=inp.value.split(',').map(s=>s.trim()).filter(Boolean);if(!vals.length)return;
+  const o=org();if(!o)return;
+  vals.forEach(v=>{if(!o.tags.includes(v))o.tags.push(v);});
+  saveDB();inp.value='';renderTags();
+}
+function removeTag(i){
+  const o=org();if(!o)return;
+  const t=o.tags[i];
+  o.tags.splice(i,1);
+  o.roleTags=(o.roleTags||[]).filter(r=>r!==t);
+  o.roleOrder=(o.roleOrder||[]).filter(r=>r!==t);
+  saveDB();renderTags();
+}
+function renameTag(i,val){
+  val=val.trim();if(!val)return;
+  const o=org();if(!o)return;
+  const old=o.tags[i];o.tags[i]=val;
+  o.roleTags=(o.roleTags||[]).map(r=>r===old?val:r);
+  o.roleOrder=(o.roleOrder||[]).map(r=>r===old?val:r);
+  o.people.forEach(p=>{p.tags=(p.tags||[]).map(t=>t===old?val:t);});
+  saveDB();
+}
+let _rpDragSrc=null;
+function initRolePriorityDrag(){
+  const rows=document.querySelectorAll('.trm-priority-row[draggable="true"]');
+  rows.forEach(row=>{
+    row.addEventListener('dragstart',e=>{_rpDragSrc=row;row.classList.add('rp-dragging');e.dataTransfer.effectAllowed='move';});
+    row.addEventListener('dragend',()=>{row.classList.remove('rp-dragging');document.querySelectorAll('.trm-priority-row').forEach(r=>r.classList.remove('rp-over'));});
+    row.addEventListener('dragover',e=>{e.preventDefault();if(_rpDragSrc&&_rpDragSrc!==row){document.querySelectorAll('.trm-priority-row').forEach(r=>r.classList.remove('rp-over'));row.classList.add('rp-over');}});
+    row.addEventListener('drop',e=>{
+      e.preventDefault();
+      if(!_rpDragSrc||_rpDragSrc===row)return;
+      const o=org();if(!o)return;
+      const src=_rpDragSrc.dataset.roletag,tgt=row.dataset.roletag;
+      const order=o.roleOrder||[...o.roleTags];
+      const si=order.indexOf(src),ti=order.indexOf(tgt);
+      if(si>-1&&ti>-1){order.splice(si,1);order.splice(ti,0,src);o.roleOrder=order;saveDB();}
+      _rpDragSrc=null;renderTags();
+    });
+  });
+}
+
+// ── EXPORT / IMPORT ────────────────────────────────────────
+function copyText(){
+  const o=org();if(!o)return;
+  const lines=o.people.map(p=>[p.name,(p.tags||[]).join(', '),
+    p.notes?'notes: '+p.notes:'',
+    p.status==='away'?'away'+(p.away?' until '+p.away:''):'',
+  ].filter(Boolean).join(' | ')).join('\n');
+  const out=o.name.toUpperCase()+'\n'+'='.repeat(40)+'\n'+lines+'\n'+'='.repeat(40);
+  navigator.clipboard.writeText(out).catch(()=>prompt('Copy:',out));
+}
+function exportJSON(){
+  const blob=new Blob([JSON.stringify(db,null,2)],{type:'application/json'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='team-directory-'+new Date().toISOString().slice(0,10)+'.json';
+  a.click();URL.revokeObjectURL(a.href);
+}
+function importJSON(e){
+  const file=e.target.files[0];if(!file)return;
+  const r=new FileReader();
+  r.onload=function(ev){
+    try{
+      const data=JSON.parse(ev.target.result);
+      if(!data.orgs||!data.orgs.length)throw new Error('No orgs found');
+      data.orgs.forEach(o=>{
+        if(!o.tags)o.tags=[];
+        if(!o.groups)o.groups=[];
+        if(!o.campaigns)o.campaigns=[];
+        if(!o.connections)o.connections=[];
+        if(!o.people)o.people=[];
+        if(!o.layout)o.layout={nodes:{},groups:{}};
+        o.people.forEach(p=>{if(p.sector&&!p.tags){p.tags=p.sector.split(',').map(s=>s.trim()).filter(Boolean);delete p.sector;}if(!p.tags)p.tags=[];});
+      });
+      const summary=data.orgs.length+' org(s), '+data.orgs.reduce((n,o)=>n+o.people.length,0)+' people, '+data.orgs.reduce((n,o)=>n+o.campaigns.length,0)+' campaign(s), '+data.orgs.reduce((n,o)=>n+o.connections.length,0)+' connection(s)';
+      if(!confirm('Replace all current data?\n\n'+summary))return;
+      db=data;saveDB();
+      activeOrgId=db.orgs[0]?.id||null;
+      activeCampaign=null;loadLayout();
+      renderSidebar();renderMain();
+    }catch(err){alert('Could not restore: '+err.message);}
+  };
+  r.readAsText(file);e.target.value='';
+}
+
+// ── MODAL DISMISS ─────────────────────────────────────────
+['person-modal','org-modal','conn-modal','campaign-modal'].forEach(id=>{
+  document.getElementById(id).addEventListener('click',function(e){if(e.target===this)this.classList.remove('open');});
+});
+
+// ── INIT ──────────────────────────────────────────────────
+loadDB();
+activeOrgId=db.orgs[0]?.id||null;
+renderSidebar();
+renderMain();
+</script>
+
+<!-- group link dialog -->
+<div class="overlay" id="storage-modal" style="display:none">
+  <div class="modal" style="max-width:420px">
+    <h3>About your data</h3>
+    <div style="font-size:13px;color:#444;line-height:1.7;display:flex;flex-direction:column;gap:14px">
+      <div>
+        <div style="font-weight:600;margin-bottom:4px">Where is it saved?</div>
+        Your data is saved to your browser's local storage — it stays on this device and is never sent to any server.
+      </div>
+      <div style="background:#fffbeb;border:1px solid #f59e0b;border-radius:8px;padding:10px 12px">
+        <div style="font-weight:600;color:#92400e;margin-bottom:6px">⚠️ Things to know</div>
+        <ul style="margin:0;padding-left:16px;color:#78350f;font-size:12px;line-height:1.9">
+          <li><strong>Clearing browser data</strong> — clearing cookies or cache will permanently delete your directory</li>
+          <li><strong>Different browser or device</strong> — data doesn't sync; each browser keeps its own copy</li>
+          <li><strong>Private or incognito mode</strong> — data is wiped when the window closes</li>
+          <li><strong>Browser updates or reinstalls</strong> — can clear local storage</li>
+        </ul>
+      </div>
+      <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:10px 12px">
+        <div style="font-weight:600;color:#166534;margin-bottom:4px">✓ Recommendation</div>
+        <div style="font-size:12px;color:#15803d">Export regularly to download a backup to your computer — the easiest way to keep your data safe and move it to another device.</div>
+      </div>
+      <div>
+        <div style="font-weight:600;margin-bottom:6px">Your data &amp; privacy</div>
+        <ul style="margin:0;padding-left:16px;font-size:12px;line-height:1.9;color:#555">
+          <li><strong>Device security</strong> — your data is protected as long as your device is locked when unattended</li>
+          <li><strong>Browser extensions</strong> — risk is minimal with reputable extensions; we recommend periodically reviewing what you have installed</li>
+          <li><strong>Exported backup files</strong> — treat any exported file as you would a standard work document; avoid storing in shared locations or sending via unencrypted channels</li>
+        </ul>
+      </div>
+    </div>
+    <div class="mactions">
+      <button class="mbtn" onclick="closeStorageModal()">Close</button>
+      <button class="mbtn primary" onclick="closeStorageModal();exportJSON()">Export backup now</button>
+    </div>
+  </div>
+</div>
+
+<div id="gl-dialog">
+  <h4 id="gl-title">Link groups</h4>
+  <input type="text" id="gl-label" placeholder="Label (optional)" maxlength="60">
+  <div class="gl-dir-row">
+    <button class="gl-dir-btn active" data-dir="fwd" id="gl-fwd">A → B</button>
+    <button class="gl-dir-btn" data-dir="bwd" id="gl-bwd">A ← B</button>
+    <button class="gl-dir-btn" data-dir="both" id="gl-both">A ↔ B</button>
+  </div>
+  <div class="gl-act-row">
+    <button id="gl-cancel">Cancel</button>
+    <button id="gl-delete" style="display:none">Delete</button>
+    <button id="gl-confirm">Save</button>
+  </div>
+</div>
+</body>
+</html>
