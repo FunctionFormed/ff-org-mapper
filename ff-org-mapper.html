@@ -410,7 +410,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
 <!-- IMPORT MODAL -->
 <div class="overlay" id="import-modal">
   <div class="modal" style="max-width:440px">
-    <h3>Import backup</h3>
+    <h3>Import org data from .json</h3>
     <p class="import-summary" id="import-summary"></p>
     <p class="import-hint">How do you want to add this file?</p>
     <div class="import-choices">
@@ -1079,7 +1079,7 @@ function renderMain(){
       <p>Create a new organisation to get started, or import an existing backup</p>
       <div class="empty-state-actions">
         <button class="esbtn primary" onclick="openOrgModal()">New organisation</button>
-        <button class="esbtn secondary" onclick="document.getElementById('import-input').click()">Import backup</button>
+        <button class="esbtn secondary" onclick="document.getElementById('import-input').click()">Import organisation data from .json</button>
       </div>
     </div>`;
     return;
