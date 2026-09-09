@@ -2237,7 +2237,7 @@ function normalizeImportedOrgs(data){
     if(!o.tags)o.tags=[];
     if(!o.groups)o.groups=[];
     if(!o.campaigns)o.campaigns=[];
-    if(!o.connections)o.connections=[];
+    if(!Array.isArray(o.connections))o.connections=[];
     if(!o.groupLinks)o.groupLinks=[];
     if(!o.roleTags)o.roleTags=[];
     if(!o.roleOrder)o.roleOrder=[];
@@ -2288,7 +2288,10 @@ function confirmImportMerge(){
 function confirmImportReplace(){
   if(!pendingImport)return;
   if(!confirm('Replace all current data?\n\n'+importSummary(pendingImport)))return;
-  db=pendingImport;
+  pendingImport.orgs.forEach(o=>{
+    o.connections=Array.isArray(o.connections)?o.connections:[];
+  });
+  db=JSON.parse(JSON.stringify(pendingImport));
   saveDB();
   activeOrgId=db.orgs[0]?.id||null;
   activeCampaign=null;loadLayout();
