@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Team Directory</title>
+<title>ff-org-mapper</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;background:#f0efe9;color:#1a1a18;height:100vh;display:flex;overflow:hidden}
@@ -185,6 +185,19 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
 .mbtn.primary{background:#1a56c4;border-color:#1a56c4;color:#fff;font-weight:500}
 .mbtn.primary:hover{background:#1446a8}
 .mbtn.danger{background:#fff;border-color:#e0a0a0;color:#c0392b}
+.mbtn.danger:hover{background:#fce8e4}
+.org-delete-warn{font-size:13px;color:#78350f;background:#fffbeb;border:1px solid #f59e0b;border-radius:8px;padding:10px 12px;line-height:1.5;margin:0 0 4px}
+.field-error{font-size:12px;color:#c0392b;margin-top:5px;line-height:1.4}
+.field input[aria-invalid="true"]{border-color:#e0a0a0;box-shadow:0 0 0 2px #fce8e4}
+.import-summary{font-size:13px;color:#444;line-height:1.5;margin:0 0 14px}
+.import-hint{font-size:12px;color:#888;margin:0 0 8px}
+.import-choices{display:flex;flex-direction:column;gap:8px}
+.import-choice{text-align:left;padding:12px 14px;border-radius:10px;border:1.5px solid #e0dfd8;background:#fff;cursor:pointer;display:flex;flex-direction:column;gap:3px}
+.import-choice:hover{border-color:#aac4f5;background:#f4f7fe}
+.import-choice strong{font-size:13px;font-weight:600;color:#1a1a18}
+.import-choice span{font-size:12px;color:#666;line-height:1.4}
+.import-choice-danger:hover{border-color:#e0a0a0;background:#fce8e4}
+.import-choice-danger strong{color:#c0392b}
 .cb-grid{display:flex;flex-wrap:wrap;gap:5px 14px;margin-top:5px}
 .cb-grid label{display:flex;align-items:center;gap:5px;font-size:13px;color:#333;cursor:pointer}
 .tag-chip-wrap{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 6px}
@@ -275,9 +288,22 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
 .empty-state-actions .esbtn.primary:hover{background:#1d4ed8}
 .empty-state-actions .esbtn.secondary{background:#f5f4f0;color:#555;border:1px solid #e0dfd8}
 .empty-state-actions .esbtn.secondary:hover{background:#e8e7e0;color:#1a1a18}
+#ls-blocked{display:none;position:fixed;inset:0;z-index:99999;background:#f0efe9;align-items:center;justify-content:center;padding:24px}
+#ls-blocked.show{display:flex}
+#ls-blocked .card{background:#fff;border:1px solid #e0dfd8;border-radius:12px;max-width:440px;padding:28px 32px;line-height:1.55}
+#ls-blocked h1{font-size:18px;font-weight:600;margin-bottom:10px}
+#ls-blocked p{font-size:14px;color:#555;margin-bottom:10px}
+#ls-blocked p:last-child{margin-bottom:0}
 </style>
 </head>
 <body>
+<div id="ls-blocked">
+  <div class="card">
+    <h1>ff-org-mapper</h1>
+    <p>This preview can't run inside Claude chat because browser storage is blocked.</p>
+    <p>Download the HTML file and open it in your browser (Chrome, Safari, or Firefox) to use the mapper.</p>
+  </div>
+</div>
 <input type="file" id="import-input" accept=".json" style="display:none" onchange="importJSON(event)">
 
 <div class="sidebar" id="sidebar">
@@ -358,8 +384,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
 <div class="overlay" id="org-modal">
   <div class="modal" style="max-width:400px">
     <h3 id="om-title">New organisation</h3>
-    <div class="field"><label>Name</label><input type="text" id="o-name" placeholder="e.g. My organisation"></div>
-    <div class="field"><label>Colour</label><div class="org-colors" id="org-color-picker"></div></div>
+    <div id="org-modal-fields">
+      <div class="field"><label>Name</label><input type="text" id="o-name" placeholder="e.g. My organisation" oninput="clearOrgNameError()"><p id="o-name-error" class="field-error" hidden></p></div>
+      <div class="field"><label>Colour</label><div class="org-colors" id="org-color-picker"></div></div>
+    </div>
+    <p id="org-delete-warn" class="org-delete-warn" hidden></p>
     <div class="mactions" id="org-modal-actions"></div>
   </div>
 </div>
@@ -378,6 +407,28 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
   </div>
 </div>
 
+<!-- IMPORT MODAL -->
+<div class="overlay" id="import-modal">
+  <div class="modal" style="max-width:440px">
+    <h3>Import backup</h3>
+    <p class="import-summary" id="import-summary"></p>
+    <p class="import-hint">How do you want to add this file?</p>
+    <div class="import-choices">
+      <button type="button" class="import-choice" onclick="confirmImportMerge()">
+        <strong>Merge</strong>
+        <span>Add new organisations. Existing ones stay as they are.</span>
+      </button>
+      <button type="button" class="import-choice import-choice-danger" onclick="confirmImportReplace()">
+        <strong>Replace</strong>
+        <span>Overwrite all current data with this file.</span>
+      </button>
+    </div>
+    <div class="mactions">
+      <button class="mbtn" onclick="closeImportModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
 <!-- CAMPAIGN MODAL -->
 <div class="overlay" id="campaign-modal">
   <div class="modal" style="max-width:380px">
@@ -391,6 +442,18 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
 </div>
 
 <script>
+(function(){
+  try{
+    var k='__ff_org_mapper_ls';
+    localStorage.setItem(k,'1');
+    localStorage.removeItem(k);
+    return;
+  }catch(e){}
+  var el=document.getElementById('ls-blocked');
+  if(el)el.classList.add('show');
+  throw new Error('ff-org-mapper: localStorage is not available in this preview');
+})();
+
 const SK='teamdir-v3';
 const ORG_COLORS=['#e8514a','#e88c3a','#e8c43a','#4caf50','#2196f3','#9c27b0','#00bcd4','#ff5722','#607d8b','#795548'];
 const AV_PAL=[['#e8f0fe','#1a56c4'],['#e1f5ee','#085041'],['#ede8fe','#4a2db5'],['#fef3e2','#7a5200'],['#fce8f0','#7a1a3e'],['#e6f4ea','#1e6e3a']];
@@ -755,31 +818,87 @@ function pickColor(c){
   selectedOrgColor=c;
   document.querySelectorAll('.color-swatch').forEach(s=>s.classList.toggle('selected',s.dataset.color===c));
 }
+function setOrgModalMode(mode){
+  const o=org();
+  const fields=document.getElementById('org-modal-fields');
+  const warn=document.getElementById('org-delete-warn');
+  const actions=document.getElementById('org-modal-actions');
+  if(mode==='delete'&&o){
+    document.getElementById('om-title').textContent='Delete organisation?';
+    fields.hidden=true;
+    warn.hidden=false;
+    warn.textContent='Delete "'+o.name+'" and all its people, groups, and connections? This cannot be undone.';
+    actions.innerHTML='<button class="mbtn" onclick="setOrgModalMode(\'edit\')">Cancel</button><button class="mbtn danger" onclick="confirmDeleteOrg()">Yes, delete</button>';
+    return;
+  }
+  fields.hidden=false;
+  warn.hidden=true;
+  warn.textContent='';
+  document.getElementById('om-title').textContent=editingOrg?'Edit organisation':'New organisation';
+  actions.innerHTML=editingOrg
+    ?'<button class="mbtn danger" onclick="setOrgModalMode(\'delete\')">Delete</button><button class="mbtn" onclick="closeOrgModal()">Cancel</button><button class="mbtn primary" onclick="saveOrg()">Save</button>'
+    :'<button class="mbtn" onclick="closeOrgModal()">Cancel</button><button class="mbtn primary" onclick="saveOrg()">Create</button>';
+}
+function orgNameTaken(name,exceptId){
+  const n=name.trim().toLowerCase();
+  return db.orgs.some(o=>o.id!==exceptId&&o.name.trim().toLowerCase()===n);
+}
+function clearOrgNameError(){
+  const el=document.getElementById('o-name-error');
+  const inp=document.getElementById('o-name');
+  if(el){el.hidden=true;el.textContent='';}
+  if(inp)inp.setAttribute('aria-invalid','false');
+}
+function showOrgNameError(msg){
+  const el=document.getElementById('o-name-error');
+  const inp=document.getElementById('o-name');
+  if(el){el.hidden=false;el.textContent=msg;}
+  if(inp){inp.setAttribute('aria-invalid','true');inp.focus();}
+}
 function openOrgModal(isEdit){
   editingOrg=!!isEdit;
   const o=isEdit?org():null;
-  document.getElementById('om-title').textContent=o?'Edit organisation':'New organisation';
   document.getElementById('o-name').value=o?o.name:'';
   selectedOrgColor=o?o.color:ORG_COLORS[4];
   initColorPicker();
-  document.getElementById('org-modal-actions').innerHTML=o
-    ?`<button class="mbtn danger" onclick="deleteOrg()">Delete</button><button class="mbtn" onclick="closeOrgModal()">Cancel</button><button class="mbtn primary" onclick="saveOrg()">Save</button>`
-    :`<button class="mbtn" onclick="closeOrgModal()">Cancel</button><button class="mbtn primary" onclick="saveOrg()">Create</button>`;
+  clearOrgNameError();
+  setOrgModalMode(o?'edit':'create');
   document.getElementById('org-modal').classList.add('open');
   setTimeout(()=>document.getElementById('o-name').focus(),50);
 }
-function closeOrgModal(){document.getElementById('org-modal').classList.remove('open');}
+function closeOrgModal(){
+  editingOrg=false;
+  document.getElementById('o-name').value='';
+  clearOrgNameError();
+  setOrgModalMode('create');
+  document.getElementById('org-modal').classList.remove('open');
+}
 function saveOrg(){
   const name=document.getElementById('o-name').value.trim();if(!name)return;
+  const exceptId=editingOrg&&org()?org().id:null;
+  if(orgNameTaken(name,exceptId)){
+    showOrgNameError('An organisation named "'+name+'" already exists. Choose a different name.');
+    return;
+  }
   if(editingOrg&&org()){org().name=name;org().color=selectedOrgColor;}
   else{const o={id:uid(),name,color:selectedOrgColor,tags:[],groups:[],people:[],campaigns:[],connections:[],groupLinks:[],roleTags:[],roleOrder:[],layout:{nodes:{},groups:{}}};db.orgs.push(o);activeOrgId=o.id;}
   saveDB();closeOrgModal();renderSidebar();renderMain();
 }
-function deleteOrg(){
-  if(!confirm('Delete this organisation and all its data?'))return;
-  db.orgs=db.orgs.filter(o=>o.id!==activeOrgId);
+function confirmDeleteOrg(){
+  const o=org();if(!o||!editingOrg)return;
+  const name=o.name;
+  const id=o.id;
+  db.orgs=db.orgs.filter(x=>x.id!==id);
   activeOrgId=db.orgs[0]?.id||null;
-  saveDB();renderSidebar();renderMain();
+  activeCampaign=null;
+  saveDB();
+  closeOrgModal();
+  renderSidebar();renderMain();
+  const el=document.getElementById('save-status');
+  if(el){
+    el.textContent='"'+name+'" deleted';
+    el.className='sidebar-save-status saved';
+  }
 }
 
 // ── PERSON MODAL ───────────────────────────────────────────
@@ -2108,6 +2227,31 @@ function exportJSON(){
   a.download='team-directory-'+new Date().toISOString().slice(0,10)+'.json';
   a.click();URL.revokeObjectURL(a.href);
 }
+let pendingImport=null;
+function importSummary(data){
+  return data.orgs.length+' org(s), '+data.orgs.reduce((n,o)=>n+(o.people||[]).length,0)+' people, '+data.orgs.reduce((n,o)=>n+(o.campaigns||[]).length,0)+' campaign(s), '+data.orgs.reduce((n,o)=>n+(o.connections||[]).length,0)+' connection(s)';
+}
+function normalizeImportedOrgs(data){
+  data.orgs.forEach(o=>{
+    if(!o.id)o.id=uid();
+    if(!o.tags)o.tags=[];
+    if(!o.groups)o.groups=[];
+    if(!o.campaigns)o.campaigns=[];
+    if(!o.connections)o.connections=[];
+    if(!o.groupLinks)o.groupLinks=[];
+    if(!o.roleTags)o.roleTags=[];
+    if(!o.roleOrder)o.roleOrder=[];
+    if(!o.people)o.people=[];
+    if(!o.layout)o.layout={nodes:{},groups:{}};
+    if(!o.layout.nodes)o.layout.nodes={};
+    if(!o.layout.groups)o.layout.groups={};
+    o.people.forEach(p=>{if(p.sector&&!p.tags){p.tags=p.sector.split(',').map(s=>s.trim()).filter(Boolean);delete p.sector;}if(!p.tags)p.tags=[];});
+  });
+}
+function closeImportModal(){
+  pendingImport=null;
+  document.getElementById('import-modal').classList.remove('open');
+}
 function importJSON(e){
   const file=e.target.files[0];if(!file)return;
   const r=new FileReader();
@@ -2115,30 +2259,48 @@ function importJSON(e){
     try{
       const data=JSON.parse(ev.target.result);
       if(!data.orgs||!data.orgs.length)throw new Error('No orgs found');
-      data.orgs.forEach(o=>{
-        if(!o.tags)o.tags=[];
-        if(!o.groups)o.groups=[];
-        if(!o.campaigns)o.campaigns=[];
-        if(!o.connections)o.connections=[];
-        if(!o.people)o.people=[];
-        if(!o.layout)o.layout={nodes:{},groups:{}};
-        o.people.forEach(p=>{if(p.sector&&!p.tags){p.tags=p.sector.split(',').map(s=>s.trim()).filter(Boolean);delete p.sector;}if(!p.tags)p.tags=[];});
-      });
-      const summary=data.orgs.length+' org(s), '+data.orgs.reduce((n,o)=>n+o.people.length,0)+' people, '+data.orgs.reduce((n,o)=>n+o.campaigns.length,0)+' campaign(s), '+data.orgs.reduce((n,o)=>n+o.connections.length,0)+' connection(s)';
-      if(!confirm('Replace all current data?\n\n'+summary))return;
-      db=data;saveDB();
-      activeOrgId=db.orgs[0]?.id||null;
-      activeCampaign=null;loadLayout();
-      renderSidebar();renderMain();
-    }catch(err){alert('Could not restore: '+err.message);}
+      normalizeImportedOrgs(data);
+      pendingImport=data;
+      document.getElementById('import-summary').textContent='This file contains '+importSummary(data)+'. Nothing has been written yet.';
+      document.getElementById('import-modal').classList.add('open');
+    }catch(err){pendingImport=null;alert('Could not restore: '+err.message);}
   };
   r.readAsText(file);e.target.value='';
+}
+function confirmImportMerge(){
+  if(!pendingImport)return;
+  const incoming=pendingImport.orgs;
+  const existing=new Set(db.orgs.map(o=>o.id));
+  let added=0;
+  incoming.forEach(o=>{
+    if(existing.has(o.id))return;
+    db.orgs.push(o);
+    existing.add(o.id);
+    added++;
+  });
+  saveDB();
+  if(!activeOrgId)activeOrgId=db.orgs[0]?.id||null;
+  activeCampaign=null;loadLayout();
+  renderSidebar();renderMain();
+  closeImportModal();
+  if(!added)alert('All organisations in this file are already in the app. Nothing was added.');
+}
+function confirmImportReplace(){
+  if(!pendingImport)return;
+  if(!confirm('Replace all current data?\n\n'+importSummary(pendingImport)))return;
+  db=pendingImport;
+  saveDB();
+  activeOrgId=db.orgs[0]?.id||null;
+  activeCampaign=null;loadLayout();
+  renderSidebar();renderMain();
+  closeImportModal();
 }
 
 // ── MODAL DISMISS ─────────────────────────────────────────
 ['person-modal','org-modal','conn-modal','campaign-modal'].forEach(id=>{
   document.getElementById(id).addEventListener('click',function(e){if(e.target===this)this.classList.remove('open');});
 });
+document.getElementById('import-modal').addEventListener('click',function(e){if(e.target===this)closeImportModal();});
 
 // ── INIT ──────────────────────────────────────────────────
 loadDB();
