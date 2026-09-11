@@ -808,8 +808,8 @@ function layoutFromMembers(ids,o,shape){
 function ensureAreaLayout(area,o){
   area.shape=area.shape==='rect'?'rect':'circle';
   const lay=area.layout;
-  if(area.shape==='rect'&&lay&&Number.isFinite(lay.w)&&Number.isFinite(lay.h))return lay;
-  if(area.shape==='circle'&&lay&&Number.isFinite(lay.r))return lay;
+  if(area.shape==='rect'&&lay&&Number.isFinite(lay.x)&&Number.isFinite(lay.y)&&Number.isFinite(lay.w)&&Number.isFinite(lay.h))return lay;
+  if(area.shape==='circle'&&lay&&Number.isFinite(lay.cx)&&Number.isFinite(lay.cy)&&Number.isFinite(lay.r))return lay;
   area.layout=layoutFromMembers(area.groupIds,o,area.shape);
   return area.layout;
 }
@@ -901,13 +901,24 @@ function claimGroupsForArea(area,ids,o){
     a.groupIds=(a.groupIds||[]).filter(id=>!set.has(id));
   });
 }
-function syncAreaMembership(area,o){
-  const geom=getAreaGeom(area,o);if(!geom)return;
-  const inside=(o.groups||[]).filter(g=>{
+function groupOverlapsAreaGeom(c,geom){
+  if(!c||!geom)return false;
+  if(geom.type==='circle')return Math.hypot(c.cx-geom.cx,c.cy-geom.cy)<geom.r+c.r;
+  const nx=Math.max(geom.x,Math.min(c.cx,geom.x+geom.w));
+  const ny=Math.max(geom.y,Math.min(c.cy,geom.y+geom.h));
+  return Math.hypot(c.cx-nx,c.cy-ny)<c.r;
+}
+function groupsEnclosedByArea(area,o){
+  const geom=getAreaGeom(area,o);if(!geom)return[];
+  const prev=new Set(area.groupIds||[]);
+  return(o.groups||[]).filter(g=>{
     const c=getGroupCircle(g,o);if(!c)return false;
-    return pointInAreaGeom(c.cx,c.cy,geom);
+    if(pointInAreaGeom(c.cx,c.cy,geom))return true;
+    return prev.has(g.id)&&groupOverlapsAreaGeom(c,geom);
   }).map(g=>g.id);
-  claimGroupsForArea(area,inside,o);
+}
+function syncAreaMembership(area,o){
+  claimGroupsForArea(area,groupsEnclosedByArea(area,o),o);
 }
 function dropGroupFromAreasIfOutside(gid,o){
   const g=(o.groups||[]).find(x=>x.id===gid);if(!g)return;
@@ -2606,77 +2617,49 @@ function showCanvasHint(){
   document.getElementById('canvas-hint-panel')?.classList.remove('hidden');
   const btn=document.getElementById('hint-reinvoke');if(btn)btn.style.display='none';
 }
-function centreLayout(){
-  const o=org();if(!o)return;
-  const canvas=document.getElementById('node-canvas');if(!canvas)return;
+function canvasViewSize(){
+  const canvas=document.getElementById('node-canvas');if(!canvas)return null;
   const dpr=window.devicePixelRatio||1;
-  const CW=canvas.width/dpr, CH=canvas.height/dpr;
-
-  // 1. Compute bounding box of all groups in world space
+  return{CW:canvas.width/dpr,CH:canvas.height/dpr};
+}
+function contentBounds(o){
   let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
-  o.groups.forEach(g=>{
+  const include=(x1,y1,x2,y2)=>{minX=Math.min(minX,x1);minY=Math.min(minY,y1);maxX=Math.max(maxX,x2);maxY=Math.max(maxY,y2);};
+  (o.groups||[]).forEach(g=>{
     const c=getGroupCircle(g,o);if(!c)return;
-    minX=Math.min(minX,c.cx-c.r);minY=Math.min(minY,c.cy-c.r);
-    maxX=Math.max(maxX,c.cx+c.r);maxY=Math.max(maxY,c.cy+c.r);
+    include(c.cx-c.r,c.cy-c.r,c.cx+c.r,c.cy+c.r);
   });
   (o.labels||[]).forEach(l=>{
     const b=getLabelBox(l);
-    minX=Math.min(minX,b.x);minY=Math.min(minY,b.y);
-    maxX=Math.max(maxX,b.x+b.w);maxY=Math.max(maxY,b.y+b.h);
+    include(b.x,b.y,b.x+b.w,b.y+b.h);
   });
-  if(minX===Infinity){canvasOffset={x:0,y:0};canvasScale=1;if(canvasDrawFn)canvasDrawFn();return;}
-
-  // 2. Shift all group positions so their cluster centre lands at the canvas centre
-  const clusterCx=(minX+maxX)/2, clusterCy=(minY+maxY)/2;
-  const targetCx=CW/2, targetCy=CH/2;
-  const dx=targetCx-clusterCx, dy=targetCy-clusterCy;
-  if(!o.layout)o.layout={groups:{}};
-  o.groups.forEach(g=>{
-    if(!o.layout.groups[g.id])o.layout.groups[g.id]={x:targetCx,y:targetCy};
-    o.layout.groups[g.id].x+=dx;
-    o.layout.groups[g.id].y+=dy;
+  (o.areas||[]).forEach(a=>{
+    const geom=getAreaGeom(a,o);if(!geom)return;
+    if(geom.type==='circle')include(geom.cx-geom.r,geom.cy-geom.r,geom.cx+geom.r,geom.cy+geom.r);
+    else include(geom.x,geom.y,geom.x+geom.w,geom.y+geom.h);
   });
-  (o.labels||[]).forEach(l=>{l.x+=dx;l.y+=dy;});
-
-  // 3. Reset pan/zoom so canvas is at 1:1 with no offset
-  canvasOffset={x:0,y:0};canvasScale=1;
-  saveDB();
+  if(minX===Infinity)return null;
+  return{minX,minY,maxX,maxY,cx:(minX+maxX)/2,cy:(minY+maxY)/2,w:maxX-minX,h:maxY-minY};
+}
+function centreLayout(){
+  const o=org();if(!o)return;
+  const view=canvasViewSize();if(!view)return;
+  const b=contentBounds(o);
+  if(!b){canvasOffset={x:0,y:0};canvasScale=1;if(canvasDrawFn)canvasDrawFn();return;}
+  canvasScale=1;
+  canvasOffset={x:view.CW/2-b.cx,y:view.CH/2-b.cy};
   if(canvasDrawFn)canvasDrawFn();
 }
 
 function fitCanvasView(){
   const o=org();if(!o)return;
-  const canvas=document.getElementById('node-canvas');if(!canvas)return;
-  const dpr=window.devicePixelRatio||1;
-  const CW=canvas.width/dpr, CH=canvas.height/dpr;
-  let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
-  o.groups.forEach(g=>{
-    const c=getGroupCircle(g,o);if(!c)return;
-    minX=Math.min(minX,c.cx-c.r);minY=Math.min(minY,c.cy-c.r);
-    maxX=Math.max(maxX,c.cx+c.r);maxY=Math.max(maxY,c.cy+c.r);
-  });
-  (o.labels||[]).forEach(l=>{
-    const b=getLabelBox(l);
-    minX=Math.min(minX,b.x);minY=Math.min(minY,b.y);
-    maxX=Math.max(maxX,b.x+b.w);maxY=Math.max(maxY,b.y+b.h);
-  });
-  (o.areas||[]).forEach(a=>{
-    const geom=getAreaGeom(a,o);if(!geom)return;
-    if(geom.type==='circle'){
-      minX=Math.min(minX,geom.cx-geom.r);minY=Math.min(minY,geom.cy-geom.r);
-      maxX=Math.max(maxX,geom.cx+geom.r);maxY=Math.max(maxY,geom.cy+geom.r);
-    }else{
-      minX=Math.min(minX,geom.x);minY=Math.min(minY,geom.y);
-      maxX=Math.max(maxX,geom.x+geom.w);maxY=Math.max(maxY,geom.y+geom.h);
-    }
-  });
-  if(minX===Infinity){canvasOffset={x:0,y:0};canvasScale=1;}
-  else{
-    const pad=60,bw=maxX-minX+pad*2,bh=maxY-minY+pad*2;
-    canvasScale=Math.min(CW/bw,CH/bh,1.5);
-    canvasOffset={x:(CW-bw*canvasScale)/2-minX*canvasScale+pad*canvasScale,
-                  y:(CH-bh*canvasScale)/2-minY*canvasScale+pad*canvasScale};
-  }
+  const view=canvasViewSize();if(!view)return;
+  const b=contentBounds(o);
+  if(!b){canvasOffset={x:0,y:0};canvasScale=1;if(canvasDrawFn)canvasDrawFn();return;}
+  const pad=60,bw=b.w+pad*2,bh=b.h+pad*2;
+  canvasScale=Math.min(view.CW/bw,view.CH/bh,1.5);
+  canvasOffset={x:(view.CW-bw*canvasScale)/2-b.minX*canvasScale+pad*canvasScale,
+                y:(view.CH-bh*canvasScale)/2-b.minY*canvasScale+pad*canvasScale};
   if(canvasDrawFn)canvasDrawFn();
 }
 
@@ -2757,10 +2740,13 @@ function beginAreaDrag(area,mx,my,o){
   selectedPersonId=null;
   updateGroupActions();
   ensureAreaLayout(area,o);
+  const ids=groupsEnclosedByArea(area,o);
+  claimGroupsForArea(area,ids,o);
   const starts={};
-  (area.groupIds||[]).forEach(id=>{
-    const lay=o.layout.groups[id];
-    if(lay)starts[id]={x:lay.x,y:lay.y};
+  ids.forEach(id=>{
+    const g=o.groups.find(x=>x.id===id);
+    const c=g?getGroupCircle(g,o):null;
+    if(c)starts[id]={x:c.cx,y:c.cy};
   });
   canvasDrag={type:'area',id:area.id,mx,my,moved:false,startX:mx,startY:my,memberStarts:starts,layoutStart:{...area.layout}};
 }
